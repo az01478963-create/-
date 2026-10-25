@@ -1061,7 +1061,7 @@ function renderMarketList(){
  $("#mktBody").innerHTML=h;
  $("#mktBody").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>requestBuy(b.dataset.buy));
  $("#mktBody").querySelectorAll("[data-unpub2]").forEach(b=>b.onclick=()=>unpublish(b.dataset.unpub2));}
-$("#stallMarket").onclick=openMarket;
+
 
 /* ---------- 拜訪別人的海域 ---------- */
 function openPlayerMenu(id,wsFlag,name,display){
