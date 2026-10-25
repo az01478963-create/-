@@ -290,7 +290,7 @@ const FEED_MSG=["在星藍海域發現了稀有的幻彩蚌！","的玫瑰蚌產
 
 /* ================= 狀態 ================= */
 let S;
-function newState(){return{coins:100,day:1,oysters:[],pearls:[],products:[],orders:[],displayId:null,
+function newState(){return{coins:100,day:1,invOysters:[],oysters:[],pearls:[],products:[],orders:[],displayId:null,
  uid:1,placedPending:null,music:true,stats:{cracked:0,sold:0}};}
 function save(){localStorage.setItem("pearlBaySave2",JSON.stringify(S));toast("💾 已儲存進度");}
 function load(){try{const d=localStorage.getItem("pearlBaySave2");return d?JSON.parse(d):null;}catch(e){return null;}}
@@ -678,6 +678,9 @@ function openInv(){
    +'<span class="gBadge" style="background:'+p.gradeColor+'">'+p.grade+'</span>'
    +'<div class="pearlInfo">'+p.pname+'<br>珠光'+p.luster+'·形狀'+p.shape+'·'+p.size+'mm<br>💰 '+fmt(p.value)+(p.damaged?" ⚠️":"")+'</div></div>';});
   html+='</div>';}else html+="<p style='font-size:13px;color:#8a7a5e'>空空如也，去敲蚌吧！</p>";
+ if(S.invOysters&&S.invOysters.length){html+='<h4 style="margin:14px 0 8px">🦪 未種植的蚌('+S.invOysters.length+')</h4>';
+  html+='<div class="pearlGrid">'+S.invOysters.map(it=>{const r=RARITIES[it.rarity];
+   return '<div class="pearlItem"><div style="font-size:38px">'+r.icon+'</div><div class="pearlInfo">'+r.name+'<br>成熟期'+MAT_MIN[it.rarity]+'分鐘</div></div>';}).join("")+'</div>';}
  html+='<h4 style="margin:14px 0 8px">🎁 加工成品('+S.products.length+')</h4>';
  if(S.products.length){S.products.forEach(pr=>{html+='<div class="pCard"><div class="pIcon">'+pr.icon+'</div><div class="pMid"><div class="pName">'
   +pr.name+' <span class="gBadge" style="background:'+pr.gradeColor+'">'+pr.grade+'</span></div><div class="pReq">💰 '+fmt(pr.value)+'</div></div></div>';});}
@@ -704,7 +707,7 @@ document.addEventListener("click",e=>{const mp=$("#menuPanel");
 $("#musicBtn").onclick=()=>{if(!S)return;S.music=!S.music;$("#musicBtn").textContent=S.music?"🎵":"🔇";sfx("click");};
 $("#startBtn").onclick=()=>{
  initAudio();sfx("done");
- S=load()||newState();genOrders();S.oysters.forEach(scheduleMaturity);
+ S=load()||newState();if(!S.invOysters)S.invOysters=[];genOrders();S.oysters.forEach(scheduleMaturity);
  $("#startScreen").classList.add("hide");
  $("#game").classList.add("on");
  $("#musicBtn").textContent=S.music?"🎵":"🔇";
@@ -1338,17 +1341,20 @@ window.openShop=function(){
   +'<button class="buyBtn" data-buy="'+slot+'" '+(can?"":"disabled")+'>💰 '+fmt(r.price)+'</button></div>';});
  html+='</div><p style="margin-top:10px;font-size:12px;color:#8a7a5e">💡 購買後請潛入海底,在「你的蚌田」範圍內按互動種植(不能重疊)</p>';
  openModal("🦪 珍珠蚌商店",html);
- $("#modalBody").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>window.buyOyster(RARITIES[STOCK[+b.dataset.buy]]));};
-window.buyOyster=function(r){if(S.coins<r.price){toast("💰 金幣不足!",true);sfx("fail");return;}
+ $("#modalBody").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>window.buyOyster(STOCK[+b.dataset.buy]));};
+window.buyOyster=function(ri){const r=RARITIES[ri];
+ if(S.coins<r.price){toast("💰 金幣不足!",true);sfx("fail");return;}
  S.coins-=r.price;sfx("buy");closeModal();
- S.placedPending=r;$("#placeTip").classList.add("on");updateHUD();
- toast("🌱 已購買 "+r.name+"!潛入海底,游到你的蚌田按互動種植");};
+ S.invOysters.push({rarity:ri});
+ updateHUD();
+ toast("🎒 "+r.name+" 已放入背包(共 "+S.invOysters.length+" 隻)!潛入你的蚌田按互動種植");};
 function inFarm(x,y){return x>FARM.x1+20&&x<FARM.x2-20&&y>FARM.y1+30&&y<FARM.y2-20;}
 window.plantAt=function(x,y){
  if(!inFarm(x,y)){toast("❌ 只能在「你的蚌田」金色虛線範圍內種植!");sfx("miss");return;}
  if(S.oysters.some(o=>Math.hypot(o.x-x,o.y-y)<75)){toast("❌ 離其他蚌太近,不能重疊!");sfx("miss");return;}
- const r=S.placedPending;S.placedPending=null;$("#placeTip").classList.remove("on");
- const o={id:S.uid++,rarity:r.rarity,x:x,y:y,born:Date.now(),matTime:MAT_MIN[r.rarity]*60000,ready:false};
+ if(!S.invOysters||!S.invOysters.length){toast("背包沒有蚌,先去商店買!");return;}
+ const it=S.invOysters.shift();const r=RARITIES[it.rarity];
+ const o={id:S.uid++,rarity:it.rarity,x:x,y:y,born:Date.now(),matTime:MAT_MIN[it.rarity]*60000,ready:false};
  S.oysters.push(o);scheduleMaturity(o);sfx("splash");updateHUD();
  toast("🌱 種下了 "+r.name+",等待成熟…");};
 
@@ -1365,10 +1371,12 @@ window.findInteract=function(){
    S.oysters.forEach(o=>{const d=dist2(P,o);if(d<100&&d<bd){bd=d;best=o;}});
    if(best)return best.ready?{label:"🔨 敲開"+RARITIES[best.rarity].name,act:()=>startCrack(best)}
     :{label:"🦪 成長中 "+Math.round(Math.min(1,(Date.now()-best.born)/best.matTime)*100)+"%",act:null};
-   if(S.placedPending!==null){
-    if(!inFarm(P.x,P.y))return{label:"🌱 游到蚌田內種植",act:()=>toast("❌ 請在金色虛線範圍內種植")};
-    if(S.oysters.some(o=>Math.hypot(o.x-P.x,o.y-P.y)<75))return{label:"🌱 這裡太擠了",act:()=>toast("❌ 離其他蚌太近!")};
-    return{label:"🌱 種植「"+S.placedPending.name+"」",act:()=>window.plantAt(P.x,P.y)};}}}
+   if(S.invOysters&&S.invOysters.length){
+    if(!inFarm(P.x,P.y))return{label:"🌱 背包有"+S.invOysters.length+"隻蚌 · 游到蚌田種植",act:()=>toast("❌ 請游到金色虛線「你的蚌田」範圍內")};
+    if(S.oysters.some(o=>Math.hypot(o.x-P.x,o.y-P.y)<75))return{label:"🌱 這裡太擠了 · 換個位置",act:()=>toast("❌ 離其他蚌太近,游開一點再種!")};
+    const r0=RARITIES[S.invOysters[0].rarity];
+    const more=S.invOysters.length>1?" 等"+S.invOysters.length+"隻":"";
+    return{label:"🌱 種植「"+r0.name+"」"+more,act:()=>window.plantAt(P.x,P.y)};}}}
  return null;};
 
 /* 場景切換 */
@@ -1444,7 +1452,7 @@ function loop(){
   if(ud.acts.Idle&&ud.acts.Walk){
    if(P.moving){ud.acts.Idle.fadeOut(.15);ud.acts.Walk.fadeIn(.15).play();ud.acts.Walk.timeScale=P.sea?1.4:1;}
    else{ud.acts.Walk.fadeOut(.15);ud.acts.Idle.fadeIn(.15).play();}}
-  if(ud.mdl){ud.mdl.rotation.x+=(((P.sea)?-1.15:0)-ud.mdl.rotation.x)*0.08;
+  if(ud.mdl){ud.mdl.rotation.x+=(((P.sea)?-0.2:0)-ud.mdl.rotation.x)*0.08;
    if(P.moving){const fy=Math.atan2(mvx,mvz);
     ud.mdl.rotation.y+=((fy+Math.PI)-ud.mdl.rotation.y)*0.2;}}
   ud.mixer&&ud.mixer.update(dt);}
@@ -1460,7 +1468,7 @@ function loop(){
     const ud2=oa.grp.userData;
     if(ud2.mixer)ud2.mixer.update(dt);
     if(ud2.acts.Idle&&ud2.acts.Walk){if(r.walk){ud2.acts.Idle.fadeOut(.2);ud2.acts.Walk.fadeIn(.2).play();}else{ud2.acts.Walk.fadeOut(.2);ud2.acts.Idle.fadeIn(.2).play();}}
-    if(ud2.mdl)ud2.mdl.rotation.x+=((r.sea?-1.15:0)-ud2.mdl.rotation.x)*0.08;}}});
+    if(ud2.mdl)ud2.mdl.rotation.x+=((r.sea?-0.2:0)-ud2.mdl.rotation.x)*0.08;}}});
  if(beachScene.userData.case){
   const dp=window.S?S.pearls.find(p=>p.id===S.displayId):null;
   const pe=beachScene.userData.case.userData.pearl;
