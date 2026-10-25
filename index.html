@@ -1061,7 +1061,7 @@ function renderMarketList(){
  $("#mktBody").innerHTML=h;
  $("#mktBody").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>requestBuy(b.dataset.buy));
  $("#mktBody").querySelectorAll("[data-unpub2]").forEach(b=>b.onclick=()=>unpublish(b.dataset.unpub2));}
-
+// 市場由 ☰ 選單開啟（攤位元素已移除，舊綁定改用防呆寫法）
 
 /* ---------- 拜訪別人的海域 ---------- */
 function openPlayerMenu(id,wsFlag,name,display){
@@ -1359,6 +1359,9 @@ function plantAt(x,y){
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 function findInteract(){
  if(!P.sea){
+  const STALL_ACTS=[()=>openShop(),()=>openCraft(),()=>openSell(),()=>openMarket()];
+  for(let si=0;si<STALLS.length;si++){const s=STALLS[si];
+   if(dist(P,s)<115)return{label:s.icon+" 進入"+s.name,act:STALL_ACTS[si]};}
   if(dist(P,CASE_POS)<95)return{label:"🏛️ 展示櫃",act:()=>$("#displayCase").onclick()};
   if(dist(P,PIER)<120)return{label:"🤿 潛入你的海域",act:()=>{P.sea=true;P.x=EXIT_POS.x;P.y=170;sfx("splash");toast("🌊 潛入海底!搖桿游動,金色按鈕互動");}};
  }else{
