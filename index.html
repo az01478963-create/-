@@ -1177,6 +1177,10 @@ function tex(uri,rx,ry){const t=new THREE.TextureLoader().load(uri);t.wrapS=t.wr
 function emojiTex(e){const cv=document.createElement("canvas");cv.width=cv.height=128;const c=cv.getContext("2d");c.font="96px serif";c.textAlign="center";c.textBaseline="middle";c.fillText(e,64,72);const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;return t;}
 function emojiSprite(e,size){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:emojiTex(e),transparent:true}));s.scale.set(size,size,1);return s;}
 function textSprite(txt,color){const cv=document.createElement("canvas");cv.width=512;cv.height=96;const c=cv.getContext("2d");c.font="bold 44px sans-serif";c.textAlign="center";c.lineWidth=8;c.strokeStyle="rgba(0,0,0,.6)";c.strokeText(txt,256,60);c.fillStyle=color||"#fff";c.fillText(txt,256,60);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true}));s.scale.set(9,1.7,1);return s;}
+function updateTextSprite(spr,txt,color){const cv=spr.material.map.image;const c=cv.getContext("2d");
+ c.clearRect(0,0,cv.width,cv.height);c.font="bold 44px sans-serif";c.textAlign="center";
+ c.lineWidth=8;c.strokeStyle="rgba(0,0,0,.65)";c.strokeText(txt,256,60);
+ c.fillStyle=color||"#fff";c.fillText(txt,256,60);spr.material.map.needsUpdate=true;}
 
 let beachScene,seaScene,curScene;
 const oysterMeshes={};
@@ -1253,7 +1257,15 @@ function buildSea(){
  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
   new THREE.LineDashedMaterial({color:0xf5c542,dashSize:1.4,gapSize:1}));
  line.computeLineDistances();sc.add(line);
- const fl=textSprite("🏝️ 你的蚌田(只能在範圍內種植)","#ffe9a8");fl.position.set(W2T((FARM.x1+FARM.x2)/2),5,Z2T(FARM.y1)+2);sc.add(fl);
+ const plat=new THREE.Mesh(new THREE.BoxGeometry((FARM.x2-FARM.x1)*0.1,0.6,(FARM.y2-FARM.y1)*0.1),
+  new THREE.MeshLambertMaterial({map:tex(IMG.sand,9,6),color:0xffdf9e,emissive:0x2a1e05}));
+ plat.position.set(W2T((FARM.x1+FARM.x2)/2),-0.02,Z2T((FARM.y1+FARM.y2)/2));sc.add(plat);
+ [[FARM.x1,FARM.y1],[FARM.x2,FARM.y1],[FARM.x2,FARM.y2],[FARM.x1,FARM.y2]].forEach(([x,y])=>{
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,4,10),
+   new THREE.MeshLambertMaterial({color:0xf5c542,emissive:0x7a5c00}));
+  post.position.set(W2T(x),2,Z2T(y));sc.add(post);});
+ const fl=textSprite("🏝️ 你的蚌田 · 只能在這片金沙上種植","#ffe9a8");
+ fl.position.set(W2T((FARM.x1+FARM.x2)/2),8,Z2T((FARM.y1+FARM.y2)/2));fl.scale.set(14,2.6,1);sc.add(fl);
  const buoy=new THREE.Group();
  const bb=new THREE.Mesh(new THREE.SphereGeometry(1.6,20,20),new THREE.MeshLambertMaterial({color:0xffffff}));
  bb.position.y=9;buoy.add(bb);
@@ -1294,7 +1306,10 @@ function makeAvatar(name,me,done){
   const nm=textSprite(name,me?"#f5c542":"#fff");nm.position.y=2.55;grp.add(nm);
   grp.userData={mixer:null,acts:{},mdl:grp,name};
   done(grp);});}
-makeAvatar(window.curName?curName():"我",true,g=>{avatar=g;if(curScene)curScene.add(g);});
+let hintSpr=null,lastHint="";
+makeAvatar(window.curName?curName():"我",true,g=>{avatar=g;
+ hintSpr=textSprite("···","#ffe9a8");hintSpr.scale.set(8,1.5,1);hintSpr.position.y=4.1;g.add(hintSpr);
+ if(curScene)curScene.add(g);});
 
 /* 搖桿 */
 const JOY={x:0,y:0,id:null};
@@ -1323,25 +1338,30 @@ setInterval(()=>{if(!window.S||!online())return;
  socialSend({t:"pos",x:Math.round(P.x),y:Math.round(P.y),sea:P.sea,dir:P.dir,walk:P.moving?1:0});},180);
 setInterval(()=>{const n=Date.now();Object.keys(REMOTES).forEach(id=>{if(n-REMOTES[id].ts>6000){delete REMOTES[id];if(otherAvatars[id]&&curScene){curScene.remove(otherAvatars[id].grp);delete otherAvatars[id];}}});},3000);
 
-/* 商店庫存 */
+/* 商店庫存:全品種列表,依稀有度決定出現機率與數量 */
+const APPEAR_P=[100,85,65,45,28,16,8,3];  // 各稀有度出現機率%,最高級最低3%
+const STOCK_QTY=[6,5,4,3,2,2,1,1];        // 出現時的庫存數,越稀有越少
 let STOCK=[],stockAt=Date.now();
-function rollRarity(){const tot=SPAWN_W.reduce((a,b)=>a+b,0);let r=Math.random()*tot;
- for(let i=0;i<8;i++){r-=SPAWN_W[i];if(r<0)return i;}return 0;}
-function rollStock(){STOCK=[];for(let i=0;i<6;i++)STOCK.push(rollRarity());stockAt=Date.now();}
+function rollStock(){STOCK=[];
+ for(let i=0;i<8;i++){if(Math.random()*100<APPEAR_P[i])STOCK.push({ri:i,qty:STOCK_QTY[i]});}
+ if(!STOCK.length)STOCK.push({ri:0,qty:5});   // 保底至少一種
+ stockAt=Date.now();}
 rollStock();
 setInterval(()=>{rollStock();genOrders();if(window.S){toast("🦪 蚌商店進新貨了!訂單同步更新",true);sfx("day");}},240000);
 function stockLeft(){const s=Math.max(0,240000-(Date.now()-stockAt));return Math.floor(s/60000)+":"+String(Math.floor(s%60000/1000)).padStart(2,"0");}
 window.openShop=function(){
- let html='<p style="font-size:12px;color:#8a7a5e">⏱️ <b id="stockTimer">'+stockLeft()+'</b> 後進新貨 · 越稀有的蚌機率越低(最低 3%)</p><div class="cardGrid">';
- STOCK.forEach((ri,slot)=>{const r=RARITIES[ri];const can=S.coins>=r.price;
-  const pct=(SPAWN_W[ri]/238*100).toFixed(1);
+ let html='<p style="font-size:12px;color:#8a7a5e">⏱️ <b id="stockTimer">'+stockLeft()+'</b> 後刷新 · 每種蚌依稀有度決定本次進貨數量,越稀有越少(最高級僅 3% 機率出現)</p><div class="cardGrid">';
+ STOCK.forEach((st,slot)=>{const r=RARITIES[st.ri];const can=S.coins>=r.price&&st.qty>0;
   html+='<div class="oCard"><div class="oImg">'+r.icon+'</div><div class="oName">'+r.name+'</div>'
   +'<div class="oStars">'+"★".repeat(r.stars)+"☆".repeat(5-r.stars)+'</div>'
-  +'<div class="oDesc">'+r.desc+'<br>刷出率約 <b>'+pct+'%</b> · 成熟期 <b>'+MAT_MIN[ri]+'分鐘</b></div>'
-  +'<button class="buyBtn" data-buy="'+slot+'" '+(can?"":"disabled")+'>💰 '+fmt(r.price)+'</button></div>';});
- html+='</div><p style="margin-top:10px;font-size:12px;color:#8a7a5e">💡 購買後請潛入海底,在「你的蚌田」範圍內按互動種植(不能重疊)</p>';
+  +'<div class="oDesc">'+r.desc+'<br>出現率 <b>'+APPEAR_P[st.ri]+'%</b> · 成熟期 <b>'+MAT_MIN[st.ri]+'分鐘</b> · 庫存 <b style="color:'+(st.qty>0?"#c0392b":"#999")+'">'+(st.qty>0?st.qty+"隻":"售完")+'</b></div>'
+  +'<button class="buyBtn" data-buy="'+slot+'" '+(can?"":"disabled")+'>'+(st.qty>0?"💰 "+fmt(r.price):"售完")+'</button></div>';});
+ if(STOCK.length<8)html+='<p style="grid-column:1/-1;font-size:12px;color:#b0a184;text-align:center">— 本次未進貨 '+(8-STOCK.length)+' 種稀有蚌,等下次刷新 —</p>';
+ html+='</div><p style="margin-top:10px;font-size:12px;color:#8a7a5e">💡 購買的蚌會先放入背包,潛入「你的蚌田」按互動種植(不能重疊)</p>';
  openModal("🦪 珍珠蚌商店",html);
- $("#modalBody").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>window.buyOyster(STOCK[+b.dataset.buy]));};
+ $("#modalBody").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{
+  const st=STOCK[+b.dataset.buy];if(!st||st.qty<=0)return;
+  st.qty--;window.buyOyster(st.ri);window.openShop();});};
 window.buyOyster=function(ri){const r=RARITIES[ri];
  if(S.coins<r.price){toast("💰 金幣不足!",true);sfx("fail");return;}
  S.coins-=r.price;sfx("buy");closeModal();
@@ -1490,6 +1510,8 @@ function loop(){
  CUR_ACT=window.findInteract();
  actBtn.textContent=CUR_ACT?CUR_ACT.label:"···";
  actBtn.classList.toggle("off",!(CUR_ACT&&CUR_ACT.act));
+ const lab=CUR_ACT?CUR_ACT.label:"";
+ if(lab!==lastHint&&hintSpr){lastHint=lab;updateTextSprite(hintSpr,lab||"···","#ffe9a8");}
  renderer.render(curScene,camera);
  }catch(err){}
 }
