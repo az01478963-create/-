@@ -451,7 +451,7 @@ function openShop(){
 
 /* ================= HUD ================= */
 function updateHUD(){$("#coinVal").textContent=fmt(S.coins);$("#dayVal").textContent=S.day;
- $("#oysterCount").textContent=S.oysters.length;
+ $("#oysterCount").textContent=S.oysters.length+(S.invOysters?S.invOysters.length:0);
  // 展示櫃
  const dp=S.pearls.find(p=>p.id===S.displayId);
  if(dp){$("#casePearl").style.cssText=pearlStyle(dp);$("#casePearl").textContent=dp.grade;
@@ -1398,12 +1398,15 @@ window.findInteract=function(){
    S.oysters.forEach(o=>{const d=dist2(P,o);if(d<100&&d<bd){bd=d;best=o;}});
    if(best)return best.ready?{label:"🔨 敲開"+RARITIES[best.rarity].name,act:()=>startCrack(best)}
     :{label:"🦪 成長中 "+Math.round(Math.min(1,(Date.now()-best.born)/best.matTime)*100)+"%",act:null};
-   if(S.invOysters&&S.invOysters.length){
-    if(!inFarm(P.x,P.y))return{label:"🌱 背包有"+S.invOysters.length+"隻蚌 · 游到蚌田種植",act:()=>toast("❌ 請游到金色虛線「你的蚌田」範圍內")};
+   const invN=(S.invOysters&&S.invOysters.length)||0;
+   if(invN>0){
+    if(!inFarm(P.x,P.y))return{label:"🌱 背包有"+invN+"隻蚌 · 往金沙平台游",act:()=>toast("❌ 請游到金色「你的蚌田」平台上")};
     if(S.oysters.some(o=>Math.hypot(o.x-P.x,o.y-P.y)<75))return{label:"🌱 這裡太擠了 · 換個位置",act:()=>toast("❌ 離其他蚌太近,游開一點再種!")};
     const r0=RARITIES[S.invOysters[0].rarity];
-    const more=S.invOysters.length>1?" 等"+S.invOysters.length+"隻":"";
-    return{label:"🌱 種植「"+r0.name+"」"+more,act:()=>window.plantAt(P.x,P.y)};}}}
+    const more=invN>1?" 等"+invN+"隻":"";
+    return{label:"🌱 種植「"+r0.name+"」"+more,act:()=>window.plantAt(P.x,P.y)};}
+   if(inFarm(P.x,P.y))return{label:"🌱 背包沒有蚌 · 去商店買",act:()=>{toast("先去沙灘商店買蚌!按互動浮出水面");switchSea(false);}};
+   return{label:"🦪 潛水中 · 背包無蚌",act:()=>toast("背包沒有蚌,浮出水面去商店購買!")}}}
  return null;};
 
 /* 場景切換 */
@@ -1452,6 +1455,14 @@ const ptrUp=e=>{PTRS.delete(e.pointerId);
  if(PTRS.size<2)pinchD=0;
  if(PTRS.size===0&&moved<12&&Date.now()-tapT<350)doAct();};
 cvs.addEventListener("pointerup",ptrUp);cvs.addEventListener("pointercancel",ptrUp);
+
+/* 除錯狀態列 */
+const dbgEl=document.createElement("div");
+Object.assign(dbgEl.style,{position:"fixed",top:"52px",left:"50%",transform:"translateX(-50%)",
+ background:"rgba(0,0,0,.55)",color:"#8fd8ea",fontSize:"11px",padding:"3px 12px",
+ borderRadius:"12px",zIndex:"35",pointerEvents:"none",fontFamily:"monospace"});
+document.body.appendChild(dbgEl);
+window.__setDbg=t=>{dbgEl.textContent=t;};
 
 /* 主迴圈 */
 const clockV=new THREE.Clock();
@@ -1519,6 +1530,8 @@ function loop(){
  actBtn.classList.toggle("off",!(CUR_ACT&&CUR_ACT.act));
  const lab=CUR_ACT?CUR_ACT.label:"";
  if(lab!==lastHint&&hintSpr){lastHint=lab;updateTextSprite(hintSpr,lab||"···","#ffe9a8");}
+ if(window.__setDbg){const invN2=(window.S&&S.invOysters)?S.invOysters.length:-1;
+  window.__setDbg("背包蚌:"+invN2+" 已種:"+(window.S?S.oysters.length:0)+" 田內:"+(inFarm(P.x,P.y)?"是":"否")+" 座標:"+Math.round(P.x)+","+Math.round(P.y));}
  renderer.render(curScene,camera);
  }catch(err){}
 }
