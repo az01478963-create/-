@@ -1341,7 +1341,7 @@ addEventListener("resize",checkRotate);checkRotate();
 
 /* 位置同步 */
 window.posRecv=function(id,name,d){REMOTES[id]={x:d.x,y:d.y,sea:!!d.sea,dir:d.dir||1,walk:d.walk||0,name:name||"玩家",ts:Date.now()};};
-setInterval(()=>{if(!window.S||!online())return;
+setInterval(()=>{if(typeof S==="undefined"||!S||!online())return;
  socialSend({t:"pos",x:Math.round(P.x),y:Math.round(P.y),sea:P.sea,dir:P.dir,walk:P.moving?1:0});},180);
 setInterval(()=>{const n=Date.now();Object.keys(REMOTES).forEach(id=>{if(n-REMOTES[id].ts>6000){delete REMOTES[id];if(otherAvatars[id]&&curScene){curScene.remove(otherAvatars[id].grp);delete otherAvatars[id];}}});},3000);
 
@@ -1354,7 +1354,7 @@ function rollStock(){STOCK=[];
  if(!STOCK.length)STOCK.push({ri:0,qty:5});   // 保底至少一種
  stockAt=Date.now();}
 rollStock();
-setInterval(()=>{rollStock();genOrders();if(window.S){toast("🦪 蚌商店進新貨了!訂單同步更新",true);sfx("day");}},240000);
+setInterval(()=>{rollStock();genOrders();if(typeof S!=="undefined"&&S){toast("🦪 蚌商店進新貨了!訂單同步更新",true);sfx("day");}},240000);
 function stockLeft(){const s=Math.max(0,240000-(Date.now()-stockAt));return Math.floor(s/60000)+":"+String(Math.floor(s%60000/1000)).padStart(2,"0");}
 window.openShop=function(){
  let html='<p style="font-size:12px;color:#8a7a5e">⏱️ <b id="stockTimer">'+stockLeft()+'</b> 後刷新 · 每種蚌依稀有度決定本次進貨數量,越稀有越少(最高級僅 3% 機率出現)</p><div class="cardGrid">';
@@ -1394,7 +1394,7 @@ window.findInteract=function(){
   if(dist2(P,PIER)<130)return{label:"🤿 潛入你的海域",act:()=>switchSea(true)};
  }else{
   if(dist2(P,EXIT_POS)<110)return{label:"🛟 浮出水面",act:()=>switchSea(false)};
-  if(window.S){let best=null,bd=1e9;
+  if(S){let best=null,bd=1e9;
    S.oysters.forEach(o=>{const d=dist2(P,o);if(d<100&&d<bd){bd=d;best=o;}});
    if(best)return best.ready?{label:"🔨 敲開"+RARITIES[best.rarity].name,act:()=>startCrack(best)}
     :{label:"🦪 成長中 "+Math.round(Math.min(1,(Date.now()-best.born)/best.matTime)*100)+"%",act:null};
@@ -1419,7 +1419,7 @@ function switchSea(on){
 
 /* 同步蚌模型 */
 function syncOysters(){
- if(!window.S)return;
+ if(typeof S==="undefined"||!S)return;
  const seen={};
  S.oysters.forEach(o=>{
   seen[o.id]=1;
@@ -1478,8 +1478,8 @@ function loop(){
  if(P.moving){
   const spd=(P.sea?5.5:7)*Math.min(1,jl);
   const fx=Math.sin(camYaw),fz=Math.cos(camYaw);   // 鏡頭前方
-  mvx=(fx*(-jy)+fz*jx)*spd*dt*10;
-  mvz=(fz*(-jy)-fx*jx)*spd*dt*10;
+  mvx=(fx*(-jy)-fz*jx)*spd*dt*10;   // 右向量=(-fz,fx),修正左右顛倒
+  mvz=(fz*(-jy)+fx*jx)*spd*dt*10;
   P.x+=mvx;P.y+=mvz;
   if(Math.abs(mvx)>0.01)P.dir=mvx>0?1:-1;
   const W=P.sea?SEA:BEACH;
@@ -1508,7 +1508,7 @@ function loop(){
     if(ud2.acts.Idle&&ud2.acts.Walk){if(r.walk){ud2.acts.Idle.fadeOut(.2);ud2.acts.Walk.fadeIn(.2).play();}else{ud2.acts.Walk.fadeOut(.2);ud2.acts.Idle.fadeIn(.2).play();}}
     if(ud2.mdl)ud2.mdl.rotation.x+=((r.sea?-0.2:0)-ud2.mdl.rotation.x)*0.08;}}});
  if(beachScene.userData.case){
-  const dp=window.S?S.pearls.find(p=>p.id===S.displayId):null;
+  const dp=(typeof S!=="undefined"&&S)?S.pearls.find(p=>p.id===S.displayId):null;
   const pe=beachScene.userData.case.userData.pearl;
   pe.visible=!!dp;
   if(dp){pe.material.color.set(dp.color);pe.rotation.y+=dt*1.2;
@@ -1530,8 +1530,8 @@ function loop(){
  actBtn.classList.toggle("off",!(CUR_ACT&&CUR_ACT.act));
  const lab=CUR_ACT?CUR_ACT.label:"";
  if(lab!==lastHint&&hintSpr){lastHint=lab;updateTextSprite(hintSpr,lab||"···","#ffe9a8");}
- if(window.__setDbg){const invN2=(window.S&&S.invOysters)?S.invOysters.length:-1;
-  window.__setDbg("背包蚌:"+invN2+" 已種:"+(window.S?S.oysters.length:0)+" 田內:"+(inFarm(P.x,P.y)?"是":"否")+" 座標:"+Math.round(P.x)+","+Math.round(P.y));}
+ if(window.__setDbg){const hasS=typeof S!=="undefined"&&S;
+  window.__setDbg("背包蚌:"+(hasS&&S.invOysters?S.invOysters.length:"?")+" 已種:"+(hasS?S.oysters.length:"?")+" 田內:"+(inFarm(P.x,P.y)?"是":"否")+" 座標:"+Math.round(P.x)+","+Math.round(P.y));}
  renderer.render(curScene,camera);
  }catch(err){}
 }
