@@ -1184,7 +1184,7 @@ joyBase.addEventListener("pointerup",joyEnd);joyBase.addEventListener("pointerca
 /* ---- 互動按鈕 ---- */
 const actBtn=$("#actBtn");
 let CUR_ACT=null;
-actBtn.addEventListener("pointerdown",e=>{e.preventDefault();if(CUR_ACT&&CUR_ACT.act){sfx("click");CUR_ACT.act();}});
+// 互動觸發改為下方多事件綁定
 
 /* ---- 橫屏提示 ---- */
 function checkRotate(){const coarse=matchMedia("(pointer:coarse)").matches;
@@ -1447,31 +1447,41 @@ function findInteract(){
  return null;}
 function tryInteract(){if(CUR_ACT&&CUR_ACT.act){sfx("click");CUR_ACT.act();}}
 
-/* ---- 主迴圈(異常保護:不再發生人物消失) ---- */
-function worldLoop(t){
- try{
-  if($("#game").classList.contains("on")){
-   const jx=JOY.x,jy=JOY.y,jl=Math.hypot(jx,jy);
-   P.moving=jl>0.18;
-   if(P.moving){const spd=P.sea?3.4:4.2;
-    P.x+=jx/jl*spd*Math.min(1,jl);P.y+=jy/jl*spd*Math.min(1,jl);
-    if(Math.abs(jx)>0.1)P.dir=jx>0?1:-1;P.walk+=0.2;
-    const W=P.sea?SEA:BEACH;
-    P.x=Math.max(40,Math.min(W.w-40,P.x));P.y=Math.max(70,Math.min(W.h-70,P.y));}
-   const cam={x:P.x-WC.width/2,y:P.y-WC.height/2};
-   cam.x=Math.max(0,Math.min((P.sea?SEA.w:BEACH.w)-WC.width,cam.x));
-   cam.y=Math.max(0,Math.min((P.sea?SEA.h:BEACH.h)-WC.height,cam.y));
-   if(P.sea)drawSeaWorld(cam,t);else drawBeach(cam,t);
-   Object.values(REMOTES).forEach(r=>{if(r.sea===P.sea)
-    drawAvatar(WCTX,r.x-cam.x,r.y-cam.y,{name:r.name,hue:hueOf(r.name),dir:r.dir,walk:r.walk,me:false,swim:P.sea});});
-   drawAvatar(WCTX,P.x-cam.x,P.y-cam.y+(P.sea?Math.sin(t/350)*3:0),
-    {name:curName(),hue:45,dir:P.dir,walk:P.moving?1:0,me:true,swim:P.sea});
-   CUR_ACT=findInteract();
-   actBtn.textContent=CUR_ACT?CUR_ACT.label:"···";
-   actBtn.classList.toggle("off",!(CUR_ACT&&CUR_ACT.act));}
- }catch(err){/* 保護:異常不會中斷迴圈 */}
- requestAnimationFrame(worldLoop);}
+/* ---- 主迴圈:更新與渲染分離,互動永遠可用 ---- */
+function gameOn(){return $("#game").classList.contains("on");}
+function updateWorld(){
+ if(!gameOn())return;
+ const jx=JOY.x,jy=JOY.y,jl=Math.hypot(jx,jy);
+ P.moving=jl>0.18;
+ if(P.moving){const spd=P.sea?3.4:4.2;
+  P.x+=jx/jl*spd*Math.min(1,jl);P.y+=jy/jl*spd*Math.min(1,jl);
+  if(Math.abs(jx)>0.1)P.dir=jx>0?1:-1;P.walk+=0.2;
+  const W=P.sea?SEA:BEACH;
+  P.x=Math.max(40,Math.min(W.w-40,P.x));P.y=Math.max(70,Math.min(W.h-70,P.y));}
+ CUR_ACT=findInteract();
+ actBtn.textContent=CUR_ACT?CUR_ACT.label:"···";
+ actBtn.classList.toggle("off",!(CUR_ACT&&CUR_ACT.act));}
+function renderWorld(t){
+ if(!gameOn())return;
+ const cam={x:P.x-WC.width/2,y:P.y-WC.height/2};
+ cam.x=Math.max(0,Math.min((P.sea?SEA.w:BEACH.w)-WC.width,cam.x));
+ cam.y=Math.max(0,Math.min((P.sea?SEA.h:BEACH.h)-WC.height,cam.y));
+ if(P.sea)drawSeaWorld(cam,t);else drawBeach(cam,t);
+ Object.values(REMOTES).forEach(r=>{if(r.sea===P.sea)
+  drawAvatar(WCTX,r.x-cam.x,r.y-cam.y,{name:r.name,hue:hueOf(r.name),dir:r.dir,walk:r.walk,me:false,swim:P.sea});});
+ drawAvatar(WCTX,P.x-cam.x,P.y-cam.y+(P.sea?Math.sin(t/350)*3:0),
+  {name:curName(),hue:45,dir:P.dir,walk:P.moving?1:0,me:true,swim:P.sea});}
+function worldLoop(t){try{updateWorld();}catch(e){}try{renderWorld(t);}catch(e){}requestAnimationFrame(worldLoop);}
 requestAnimationFrame(worldLoop);
+/* ---- 互動觸發:金色按鈕(多事件) + 點一下畫面也行 ---- */
+let lastAct=0;
+function doAct(){const n=Date.now();if(n-lastAct<400)return;lastAct=n;
+ if(CUR_ACT&&CUR_ACT.act){sfx("click");CUR_ACT.act();}}
+["pointerdown","click"].forEach(ev=>actBtn.addEventListener(ev,e=>{e.preventDefault();doAct();}));
+let tapX=0,tapY=0;
+WC.addEventListener("pointerdown",e=>{tapX=e.clientX;tapY=e.clientY;});
+WC.addEventListener("pointerup",e=>{
+ if(Math.abs(e.clientX-tapX)<14&&Math.abs(e.clientY-tapY)<14)doAct();});
 </script>
 </body>
 </html>
