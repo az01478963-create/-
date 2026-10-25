@@ -504,20 +504,21 @@ function genOrders(){S.orders=[];
 let CK=null; // {oyster,points[{x,y,hit}],hits,miss,hints,pearl,damaged}
 function startCrack(o){
  CK={oyster:o,points:[],hits:0,miss:0,hints:3,pearl:null,damaged:false};
- const area=$("#shellArea");area.querySelectorAll(".hitMark,.hintRing").forEach(e=>e.remove());
+ $("#crackModal").classList.add("on");
+ const area=$("#shellArea");area.querySelectorAll(".hitMark,.hintRing,.bump").forEach(e=>e.remove());
  $("#shellTop").classList.remove("open");$("#crackPearl").className="";$("#crackPearl").style.cssText="";
  $("#revealPanel").className="";$("#revealPanel").innerHTML="";$("#crackClose").style.display="none";
  $("#hitCount").textContent="0";$("#missCount").textContent="0";$("#hintLeft").textContent="3";
  $("#crackMsg").textContent="找出蚌殼上的 3 個敲擊點！";
  // 隨機 3 個敲擊點(避開太近)
- const W=area.clientWidth,H=area.clientHeight;
+ const W=area.clientWidth||440,H=area.clientHeight||380;
  while(CK.points.length<3){const x=W*(0.24+Math.random()*0.52),y=H*(0.42+Math.random()*0.34);
   if(CK.points.every(p=>Math.hypot(p.x-x,p.y-y)>70))CK.points.push({x,y,hit:false});}
  // 畫出凸起小點(視覺提示)
  CK.points.forEach(p=>{const d=document.createElement("div");
   d.style.cssText="position:absolute;left:"+p.x+"px;top:"+p.y+"px;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c9a98c,#8a6a52);box-shadow:0 2px 3px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.5);z-index:4;";
   d.className="bump";area.appendChild(d);p.el=d;});
- $("#crackModal").classList.add("on");sfx("click");}
+ sfx("click");}
 $("#shellArea").addEventListener("click",e=>{
  if(!CK||CK.pearl)return;
  if(e.target.closest("#crackUI")||e.target.closest("#revealPanel"))return;
@@ -1391,6 +1392,7 @@ function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,
 
 /* ---- 商店庫存:4 分鐘刷新,稀有度機率最低 3% ---- */
 const SPAWN_W=[100,70,45,28,16,9,5,3];   // 越稀有權重越低,最低 3
+const MAT_MIN=[2,3,5,10,20,35,55,120];   // 各稀有度成熟期(分鐘),最長2小時
 const STOCK_N=6,STOCK_MS=4*60*1000;
 let STOCK=[],stockAt=Date.now();
 function rollRarity(){const tot=SPAWN_W.reduce((a,b)=>a+b,0);let r=Math.random()*tot;
@@ -1405,7 +1407,7 @@ openShop=function(){
   const pct=(SPAWN_W[ri]/SPAWN_W.reduce((a,b)=>a+b,0)*100).toFixed(1);
   html+='<div class="oCard"><div class="oImg">'+r.icon+'</div><div class="oName">'+r.name+'</div>'
   +'<div class="oStars">'+"★".repeat(r.stars)+"☆".repeat(5-r.stars)+'</div>'
-  +'<div class="oDesc">'+r.desc+'<br>刷出率約 <b>'+pct+'%</b></div>'
+  +'<div class="oDesc">'+r.desc+'<br>刷出率約 <b>'+pct+'%</b> · 成熟期 <b>'+MAT_MIN[ri]+'分鐘</b></div>'
   +'<button class="buyBtn" data-buy="'+slot+'" '+(can?"":"disabled")+'>💰 '+fmt(r.price)+'</button></div>';});
  html+='</div><p style="margin-top:10px;font-size:12px;color:#8a7a5e">💡 購買後請潛入海底,在「你的蚌田」範圍內按互動種植(不能重疊)</p>';
  openModal("🦪 珍珠蚌商店",html);
@@ -1419,7 +1421,7 @@ function plantAt(x,y){
  if(!inFarm(x,y)){toast("❌ 只能在「你的蚌田」金色虛線範圍內種植!");sfx("miss");return;}
  if(S.oysters.some(o=>Math.hypot(o.x-x,o.y-y)<75)){toast("❌ 離其他蚌太近,不能重疊!");sfx("miss");return;}
  const r=S.placedPending;S.placedPending=null;$("#placeTip").classList.remove("on");
- const o={id:S.uid++,rarity:r.rarity,x:x,y:y,born:Date.now(),matTime:(18+r.rarity*7)*1000,ready:false};
+ const o={id:S.uid++,rarity:r.rarity,x:x,y:y,born:Date.now(),matTime:MAT_MIN[r.rarity]*60000,ready:false};
  S.oysters.push(o);scheduleMaturity(o);sfx("splash");updateHUD();
  toast("🌱 種下了 "+r.name+",等待成熟…");};
 
