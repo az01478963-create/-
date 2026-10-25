@@ -1,0 +1,8 @@
+{
+  "name": "pearl-dream-bay",
+  "version": "1.0.0",
+  "description": "珍珠夢海灣 - 多人連線珍珠養殖遊戲",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "ws": "^8.18.0" }
+}

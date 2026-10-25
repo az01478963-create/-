@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>珍珠夢海灣 Pearl Dream Bay</title>
+<style>
+:root{
+  --sea1:#0b3d51; --sea2:#11607a; --sea3:#1b8aa6;
+  --sand:#f0dfb5; --wood:#7a5230; --wood2:#5d3d22;
+  --gold:#f5c542; --panel:#fffdf6; --ink:#3a2c1e;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#06222e;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:var(--ink)}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+/* ===== 開始畫面 ===== */
+#startScreen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ background:radial-gradient(ellipse at 50% 120%, #1b8aa6 0%, #0b3d51 45%, #06222e 100%);transition:opacity .8s}
+#startScreen.hide{opacity:0;pointer-events:none}
+.logo{font-size:min(9vw,72px);font-weight:900;color:#fff;letter-spacing:.08em;text-shadow:0 4px 0 #0a4a5e,0 10px 30px rgba(0,0,0,.5);animation:float 3s ease-in-out infinite}
+.logo span{color:var(--gold);text-shadow:0 4px 0 #8a6a10,0 10px 30px rgba(0,0,0,.5)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.logoPearl{font-size:min(14vw,110px);animation:spinPearl 5s linear infinite;filter:drop-shadow(0 0 25px #fff)}
+@keyframes spinPearl{0%{transform:rotateY(0) scale(1)}50%{transform:rotateY(180deg) scale(1.15)}100%{transform:rotateY(360deg) scale(1)}}
+.tagline{color:#bfeaf5;margin:14px 0 26px;font-size:min(4vw,18px);letter-spacing:.3em}
+#howto{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:14px 22px;color:#e8f7fb;font-size:min(3.4vw,14px);line-height:1.9;max-width:560px;margin-bottom:26px;text-align:left}
+#howto b{color:var(--gold)}
+#startBtn{font-size:min(5vw,24px);font-weight:800;padding:16px 54px;border-radius:60px;color:#5d3d22;
+ background:linear-gradient(180deg,#ffe9a8,#f5c542 60%,#d9a520);box-shadow:0 6px 0 #8a6a10,0 14px 30px rgba(0,0,0,.4);transition:.15s}
+#startBtn:hover{transform:translateY(-3px) scale(1.03)}
+#startBtn:active{transform:translateY(2px);box-shadow:0 2px 0 #8a6a10}
+/* ===== 主畫面 ===== */
+#game{display:none;position:fixed;inset:0}
+#game.on{display:block}
+#seaCanvas{position:absolute;inset:0;width:100%;height:100%}
+/* 頂部 HUD */
+#hud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 14px;z-index:20;pointer-events:none}
+.hudBox{pointer-events:auto;background:rgba(6,34,46,.75);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:7px 14px;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px}
+#coinBox{color:var(--gold)}
+#musicBtn{margin-left:auto;font-size:18px}
+/* 攤販街(前方) */
+#stallRow{position:absolute;top:56px;left:50%;transform:translateX(-50%);display:flex;gap:14px;z-index:15;perspective:800px}
+.stall{width:118px;cursor:pointer;transition:transform .18s;transform-style:preserve-3d}
+.stall:hover{transform:translateY(-6px) rotateX(6deg) scale(1.05)}
+.stall .awning{height:26px;border-radius:8px 8px 0 0;background:repeating-linear-gradient(90deg,#e74c3c 0 14px,#fff 14px 28px);box-shadow:0 3px 6px rgba(0,0,0,.35);position:relative}
+.stall .awning:after{content:"";position:absolute;left:6px;right:6px;bottom:-6px;height:8px;background:inherit;border-radius:0 0 6px 6px;clip-path:polygon(0 0,100% 0,100% 40%,92% 100%,84% 40%,76% 100%,68% 40%,60% 100%,52% 40%,44% 100%,36% 40%,28% 100%,20% 40%,12% 100%,4% 40%,0 100%)}
+.stall .body{background:linear-gradient(180deg,#9c6b3f,#7a5230);border:2px solid #5d3d22;border-top:none;border-radius:0 0 10px 10px;padding:8px 4px 9px;text-align:center;color:#fff;box-shadow:0 8px 14px rgba(0,0,0,.4)}
+.stall .icon{font-size:32px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
+.stall .name{font-size:13px;font-weight:800;margin-top:2px;text-shadow:0 1px 2px #000}
+.stall .sub{font-size:10px;color:#ffe9a8}
+/* 展示櫃(養殖場路口) */
+#displayCase{position:absolute;left:14px;top:120px;z-index:15;width:120px;background:linear-gradient(180deg,#5d3d22,#402a15);border:3px solid #2e1d0e;border-radius:12px;padding:8px;text-align:center;box-shadow:0 10px 20px rgba(0,0,0,.5)}
+#displayCase h4{color:var(--gold);font-size:12px;margin-bottom:6px;letter-spacing:.1em}
+#casePearl{width:64px;height:64px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#fff;text-shadow:0 1px 3px #000;box-shadow:inset -8px -10px 16px rgba(0,0,0,.35),inset 6px 8px 14px rgba(255,255,255,.55),0 0 18px rgba(255,255,255,.35);animation:caseGlow 2.4s ease-in-out infinite}
+@keyframes caseGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.25)}}
+#caseName{color:#fff;font-size:11px;margin-top:6px;line-height:1.4}
+#caseValue{color:var(--gold);font-size:11px;font-weight:800}
+/* 右側多人面板 */
+#multiPanel{position:absolute;right:10px;top:56px;z-index:15;width:172px;background:rgba(6,34,46,.8);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:8px;color:#dff3f9;font-size:12px;backdrop-filter:blur(4px)}
+#multiPanel h4{color:#8fd8ea;font-size:12px;text-align:center;margin-bottom:6px}
+.mRow{display:flex;justify-content:space-between;padding:2px 4px;border-radius:6px}
+.mRow.me{background:rgba(245,197,66,.25);color:var(--gold);font-weight:800}
+#feed{margin-top:8px;border-top:1px dashed rgba(255,255,255,.25);padding-top:6px;height:110px;overflow:hidden;position:relative}
+#feed div{animation:feedIn .4s;line-height:1.5;opacity:.95}
+@keyframes feedIn{from{transform:translateY(8px);opacity:0}}
+/* 底部工具列 */
+#dock{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:15}
+.dockBtn{background:rgba(6,34,46,.85);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:12px;padding:8px 16px;font-size:14px;font-weight:700;transition:.15s}
+.dockBtn:hover{background:rgba(27,138,166,.9);transform:translateY(-3px)}
+.dockBtn b{color:var(--gold)}
+/* 通用 Modal */
+.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(3,18,24,.72);backdrop-filter:blur(3px)}
+.modal.on{display:flex}
+.sheet{background:var(--panel);border-radius:18px;width:min(720px,94vw);max-height:86vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.6);animation:pop .3s}
+@keyframes pop{from{transform:scale(.9);opacity:0}}
+.sheetHead{display:flex;align-items:center;padding:14px 18px;border-bottom:2px dashed #d8c9a8}
+.sheetHead h3{font-size:20px;flex:1}
+.xBtn{background:#e74c3c;color:#fff;width:34px;height:34px;border-radius:50%;font-size:16px;font-weight:900}
+.sheetBody{padding:14px 18px;overflow-y:auto}
+/* 商店卡片 */
+.cardGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.oCard{border:2px solid #e0d3b3;border-radius:14px;padding:10px;text-align:center;background:linear-gradient(180deg,#fff,#fdf6e3);transition:.15s;position:relative}
+.oCard:hover{transform:translateY(-4px);box-shadow:0 8px 18px rgba(0,0,0,.15)}
+.oImg{font-size:44px;line-height:1.2;filter:drop-shadow(0 4px 4px rgba(0,0,0,.25))}
+.oName{font-weight:800;font-size:14px;margin:4px 0 2px}
+.oStars{color:var(--gold);font-size:12px;letter-spacing:2px}
+.oDesc{font-size:11px;color:#8a7a5e;min-height:28px}
+.buyBtn{margin-top:6px;background:linear-gradient(180deg,#ffd968,#f0a832);color:#5d3d10;font-weight:800;border-radius:20px;padding:6px 16px;font-size:13px;box-shadow:0 3px 0 #b57a15}
+.buyBtn:disabled{filter:grayscale(1);opacity:.5;cursor:not-allowed}
+/* 珍珠圓珠 */
+.pearlGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:10px}
+.pearlItem{border:2px solid #e0d3b3;border-radius:12px;padding:8px 4px;text-align:center;background:#fff;cursor:pointer;transition:.12s;position:relative}
+.pearlItem:hover{transform:scale(1.05)}
+.pearlItem.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,197,66,.45)}
+.pearlBall{width:46px;height:46px;margin:0 auto;border-radius:50%;box-shadow:inset -7px -9px 12px rgba(0,0,0,.3),inset 5px 7px 10px rgba(255,255,255,.6),0 3px 8px rgba(0,0,0,.25)}
+.pearlInfo{font-size:10px;color:#6b5a3e;line-height:1.5;margin-top:4px}
+.gBadge{display:inline-block;font-weight:900;font-size:11px;color:#fff;padding:1px 8px;border-radius:10px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* 訂單/產品卡 */
+.pCard{border:2px solid #e0d3b3;border-radius:14px;padding:12px;background:linear-gradient(180deg,#fff,#fdf6e3);display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.pCard .pIcon{font-size:40px}
+.pCard .pMid{flex:1}
+.pCard .pName{font-weight:800}
+.pCard .pReq{font-size:11px;color:#8a7a5e;line-height:1.6}
+.sellBtn{background:linear-gradient(180deg,#7fd8a0,#3fae6d);color:#fff;font-weight:800;border-radius:20px;padding:8px 18px;box-shadow:0 3px 0 #237a47;white-space:nowrap}
+.sellBtn:disabled{filter:grayscale(1);opacity:.5}
+.orderBonus{color:#c0392b;font-weight:900}
+/* 敲蚌 */
+#crackSheet{background:transparent;box-shadow:none;width:min(460px,94vw);animation:none}
+#shellArea{position:relative;width:100%;height:380px;background:radial-gradient(ellipse at 50% 60%,#7fd0e8 0%,#2b7d9c 70%,#175d77 100%);border-radius:20px;overflow:hidden;box-shadow:inset 0 0 60px rgba(0,0,0,.4)}
+#shellBottom{position:absolute;left:50%;bottom:38px;transform:translateX(-50%);width:300px;height:150px;background:linear-gradient(180deg,#8a6a52,#5d4433);border-radius:50% 50% 46% 46%/70% 70% 40% 40%;box-shadow:inset 0 -14px 24px rgba(0,0,0,.4),0 10px 20px rgba(0,0,0,.35)}
+#shellInner{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);width:250px;height:112px;border-radius:50% 50% 46% 46%/70% 70% 40% 40%;background:radial-gradient(ellipse at 50% 30%,#fff8f0,#e8cfc0 60%,#c9a58f);box-shadow:inset 0 6px 14px rgba(255,255,255,.8)}
+#shellTop{position:absolute;left:50%;bottom:120px;transform:translateX(-50%);transform-origin:50% 100%;width:296px;height:150px;background:linear-gradient(180deg,#9c7a5e,#6b4e38);border-radius:50% 50% 30% 30%/80% 80% 30% 30%;box-shadow:inset 0 10px 18px rgba(255,255,255,.25),0 8px 16px rgba(0,0,0,.3);z-index:3;transition:transform 1.1s cubic-bezier(.6,-0.2,.3,1.2)}
+#shellTop .ridge{position:absolute;inset:10px;border-radius:inherit;background:repeating-radial-gradient(ellipse at 50% 100%,transparent 0 12px,rgba(0,0,0,.12) 12px 15px)}
+#shellTop.open{transform:translateX(-50%) rotateX(118deg)}
+#crackPearl{position:absolute;left:50%;bottom:78px;transform:translateX(-50%) scale(0);width:74px;height:74px;border-radius:50%;z-index:2;box-shadow:inset -10px -12px 18px rgba(0,0,0,.3),inset 8px 10px 16px rgba(255,255,255,.7),0 0 30px rgba(255,255,255,.8);transition:transform .5s cubic-bezier(.3,1.6,.5,1) .5s}
+#crackPearl.show{transform:translateX(-50%) scale(1)}
+.hitMark{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:18px;z-index:4;animation:hitPop .35s;box-shadow:0 0 12px #fff}
+@keyframes hitPop{from{transform:scale(0)}}
+.hintRing{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:4px solid var(--gold);z-index:4;animation:hintPulse .5s ease-in-out 3;pointer-events:none}
+@keyframes hintPulse{0%,100%{transform:scale(.8);opacity:1}50%{transform:scale(1.25);opacity:.4}}
+#crackUI{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;z-index:6}
+.crackChip{background:rgba(0,0,0,.5);color:#fff;border-radius:20px;padding:5px 14px;font-size:13px;font-weight:700}
+#hintBtn{background:linear-gradient(180deg,#ffe9a8,#f5c542);color:#5d3d10;font-weight:800;border-radius:20px;padding:5px 14px;font-size:13px}
+#crackMsg{position:absolute;left:0;right:0;bottom:6px;text-align:center;color:#fff;font-weight:800;font-size:15px;text-shadow:0 2px 4px #000;z-index:6}
+#crackSheet.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+#revealPanel{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(0);background:rgba(255,253,246,.97);border-radius:16px;padding:18px 26px;text-align:center;z-index:8;transition:transform .45s cubic-bezier(.3,1.5,.5,1);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+#revealPanel.show{transform:translate(-50%,-50%) scale(1)}
+#revealPanel h3{font-size:18px;margin-bottom:6px}
+#revealPanel .rv{font-size:14px;color:#6b5a3e;line-height:1.7}
+/* 加工動畫 */
+#procSteps{display:flex;justify-content:center;gap:14px;margin:18px 0}
+.procStep{width:82px;text-align:center;opacity:.25;transition:.3s}
+.procStep.on{opacity:1;transform:translateY(-6px) scale(1.1)}
+.procStep .pi{font-size:40px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3))}
+.procStep .pt{font-size:11px;font-weight:800;margin-top:2px}
+#procBar{height:14px;background:#e8ddc2;border-radius:8px;overflow:hidden;margin:0 10px}
+#procFill{height:100%;width:0;background:linear-gradient(90deg,#6fd3e8,#f5c542);border-radius:8px;transition:width .3s}
+#procPearls{font-size:34px;text-align:center;margin:10px 0;letter-spacing:6px}
+.bigBtn{display:block;margin:16px auto 4px;background:linear-gradient(180deg,#ffd968,#f0a832);color:#5d3d10;font-weight:900;font-size:17px;border-radius:30px;padding:12px 42px;box-shadow:0 4px 0 #b57a15}
+/* 聊天室 */
+#chatBox{position:fixed;left:12px;bottom:64px;width:258px;z-index:25;display:none;flex-direction:column;background:rgba(6,34,46,.9);border:1px solid rgba(255,255,255,.25);border-radius:14px;overflow:hidden;backdrop-filter:blur(4px);box-shadow:0 12px 30px rgba(0,0,0,.5)}
+#chatBox.on{display:flex}
+#chatLog{height:158px;overflow-y:auto;padding:8px 10px;font-size:12px;color:#e8f7fb;line-height:1.65;word-break:break-all}
+#chatLog b{color:#8fd8ea}
+#chatLog .sys{color:#f5c542;font-size:11px}
+#chatBar{display:flex;border-top:1px solid rgba(255,255,255,.2)}
+#chatInput{flex:1;background:transparent;border:none;color:#fff;padding:9px 10px;font-size:13px;outline:none;font-family:inherit}
+#chatSend{background:#1b8aa6;color:#fff;padding:0 15px;font-weight:800}
+/* toast */
+#toasts{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:99;pointer-events:none}
+.toast{background:rgba(6,34,46,.92);color:#fff;border-radius:24px;padding:9px 22px;margin-top:8px;font-weight:700;font-size:14px;animation:feedIn .3s;box-shadow:0 8px 20px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2)}
+.toast.gold{color:var(--gold)}
+/* 放置模式提示 */
+#placeTip{position:fixed;bottom:66px;left:50%;transform:translateX(-50%);z-index:30;background:rgba(245,197,66,.95);color:#5d3d10;font-weight:800;padding:8px 22px;border-radius:24px;display:none;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+#placeTip.on{display:block;animation:feedIn .3s}
+@media (max-width:760px){#multiPanel{display:none}.stall{width:96px}}
+</style>
+</head>
+<body>
+<!-- 開始畫面 -->
+<div id="startScreen">
+  <div class="logoPearl">🦪</div>
+  <div class="logo">珍珠<span>夢海灣</span></div>
+  <div class="tagline">PEARL DREAM BAY · 多人連線養殖</div>
+  <div id="howto">
+    🚶 <b>WASD / 方向鍵</b>移動角色,靠近攤位、展示櫃按 <b>E</b> 互動<br>
+    🦪 到商店買蚌苗 → 走到<b>潛水區按 E 潛入海底</b> → 游到空地按 E 放置(不可重疊)<br>
+    🔨 成熟後靠近蚌殼按 E,<b>敲對 3 個點</b>打開(位置隨機、有提示),敲錯超過 <b>15 次珍珠受損</b><br>
+    💎 珍珠依<b>稀有度、珠光、形狀、顏色、大小</b>評級 D～SSS<br>
+    🔧 到加工商店做手串、單珠項鍊、戒指等 6 種產品 → 販售商店一般販售或接<b>訂單</b><br>
+    🌐 多人連線:和朋友互逛海域、參觀展示櫃、交易市場買賣、聊天室聊天!
+  </div>
+  <button id="startBtn">🐚 開始遊戲</button>
+</div>
+
+<!-- 主遊戲 -->
+<div id="game">
+  <canvas id="seaCanvas"></canvas>
+  <div id="hud">
+    <div class="hudBox" id="coinBox">💰 <span id="coinVal">0</span></div>
+    <div class="hudBox">📅 第 <span id="dayVal">1</span> 天</div>
+    <div class="hudBox">🦪 <span id="oysterCount">0</span></div>
+    <button class="hudBox" id="musicBtn">🎵</button>
+  </div>
+  <div id="stallRow">
+    <div class="stall" id="stallShop"><div class="awning"></div><div class="body"><div class="icon">🦪</div><div class="name">珍珠蚌商店</div><div class="sub">購買蚌苗</div></div></div>
+    <div class="stall" id="stallCraft"><div class="awning" style="filter:hue-rotate(140deg)"></div><div class="body"><div class="icon">🔧</div><div class="name">加工商店</div><div class="sub">六種產品</div></div></div>
+    <div class="stall" id="stallSell"><div class="awning" style="filter:hue-rotate(230deg)"></div><div class="body"><div class="icon">💰</div><div class="name">販售商店</div><div class="sub">一般·訂單</div></div></div>
+    <div class="stall" id="stallMarket"><div class="awning" style="filter:hue-rotate(60deg)"></div><div class="body"><div class="icon">🏪</div><div class="name">交易市場</div><div class="sub">玩家交易</div></div></div>
+  </div>
+  <div id="displayCase">
+    <h4>🏛️ 養殖場展示櫃</h4>
+    <div id="casePearl" style="background:#9fb6c0">?</div>
+    <div id="caseName">尚未展示</div>
+    <div id="caseValue"></div>
+  </div>
+  <div id="multiPanel">
+    <h4>🏝️ 島嶼財富榜</h4>
+    <div id="netUI">
+      <button class="dockBtn" id="createRoomBtn" style="width:100%;margin-bottom:6px">🔗 創建多人房間</button>
+      <button class="dockBtn" id="joinRoomBtn" style="width:100%">🔑 加入房間</button>
+      <div id="netStatus" style="text-align:center;font-size:11px;color:#8fd8ea;margin-top:4px">離線單機模式</div>
+    </div>
+    <div id="leaderList" style="margin-top:6px"></div>
+    <div id="feed"></div>
+  </div>
+  <div id="dock">
+    <button class="dockBtn" id="chatBtn">🗨️ 聊天</button>
+    <button class="dockBtn" id="invBtn">🎒 物品</button>
+    <button class="dockBtn" id="helpBtn">❓ 玩法</button>
+    <button class="dockBtn" id="saveBtn">💾 儲存</button>
+  </div>
+  <div id="chatBox"><div id="chatLog"></div><div id="chatBar"><input id="chatInput" maxlength="60" placeholder="輸入訊息,Enter 送出..."><button id="chatSend">➤</button></div></div>
+  <div id="placeTip">📍 已購買蚌苗!走到潛水區潛入海底,游到空地按 E 放置</div>
+  <div id="toasts"></div>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</div>
+
+<!-- 通用 Modal -->
+<div class="modal" id="modal"><div class="sheet"><div class="sheetHead"><h3 id="modalTitle"></h3><button class="xBtn" data-close>✕</button></div><div class="sheetBody" id="modalBody"></div></div></div>
+
+<!-- 敲蚌小遊戲 -->
+<div class="modal" id="crackModal"><div class="sheet" id="crackSheet">
+  <div id="shellArea">
+    <div id="crackUI">
+      <div class="crackChip">🔨 敲對 <span id="hitCount">0</span>/3　❌ 敲錯 <span id="missCount">0</span>/15</div>
+      <button id="hintBtn">💡 提示 (<span id="hintLeft">3</span>)</button>
+    </div>
+    <div id="shellBottom"></div>
+    <div id="shellInner"></div>
+    <div id="crackPearl"></div>
+    <div id="shellTop"><div class="ridge"></div></div>
+    <div id="crackMsg">找出蚌殼上的 3 個敲擊點！</div>
+    <div id="revealPanel"></div>
+  </div>
+  <button class="bigBtn" id="crackClose" style="display:none">收下珍珠</button>
+</div></div>
+
+<script>
+"use strict";
+/* ================= 資料定義 ================= */
+const RARITIES=[
+ {name:"泥沙蚌",icon:"🦪",price:50,stars:1,base:60, colors:["#cfd4d8","#e8e8e8"],desc:"最常見的蚌，偶爾也有驚喜"},
+ {name:"青蚌",icon:"🦪",price:150,stars:1,base:180, colors:["#bfe3c0","#e2f3d8"],desc:"湖水青殼，品質穩定"},
+ {name:"紫蚌",icon:"🦪",price:420,stars:2,base:520, colors:["#e8b4d8","#f7d9ee"],desc:"夢幻紫殼，產出粉紫珍珠"},
+ {name:"金蚌",icon:"🦪",price:1100,stars:2,base:1400, colors:["#f3d27a","#fbeec0"],desc:"金紋外殼，金色珍珠光"},
+ {name:"玫瑰蚌",icon:"🦪",price:2600,stars:3,base:3400, colors:["#f0a8a0","#fbd3c8"],desc:"玫瑰色澤，深受收藏家喜愛"},
+ {name:"星藍蚌",icon:"🦪",price:6200,stars:3,base:8200, colors:["#9fc3f0","#d3e6fb"],desc:"夜光藍殼，如星辰般閃耀"},
+ {name:"月白蚌",icon:"🦪",price:15000,stars:4,base:20000, colors:["#eef4f8","#ffffff"],desc:"月華凝結，珍珠潔白無瑕"},
+ {name:"幻彩蚌",icon:"🦪",price:40000,stars:5,base:55000, colors:["#c9a8f0","#ffd9f0"],desc:"傳說中的蚌，七彩流光"}
+];
+const GRADES=[["D",35,"#8a8a8a",0.6],["C",50,"#6b8e5a",0.8],["B",62,"#4a90c2",1.0],["A",74,"#9b59b6",1.35],["S",84,"#e67e22",1.8],["SS",93,"#e74c3c",2.4],["SSS",101,"#c0392b",3.2]];
+const PRODUCTS=[
+ {key:"ring",name:"珍珠戒指",icon:"💍",need:1,fee:80,mult:2.0,desc:"單顆珍珠鑲嵌,經典不敗"},
+ {key:"pendant",name:"單珠項鍊",icon:"📿",need:1,fee:120,mult:2.3,desc:"一珠一鏈,簡約高雅"},
+ {key:"earrings",name:"珍珠耳環",icon:"👂",need:2,fee:150,mult:2.2,desc:"成對珍珠,左右輝映"},
+ {key:"brooch",name:"珍珠胸針",icon:"🎀",need:3,fee:260,mult:2.4,desc:"三珠簇擁,別緻大方"},
+ {key:"bracelet",name:"珍珠手串",icon:"📿",need:6,fee:320,mult:2.6,desc:"六珠串聯,圓滿手圍"},
+ {key:"crown",name:"珍珠皇冠",icon:"👑",need:5,fee:800,mult:3.0,desc:"五珠冠冕,王者風範(需A級以上)"}
+];
+const PROC_STEPS=[["🧼","清洗"],["✨","拋光"],["🔩","打孔"],["🪡","串製"]];
+const NPCS=[{name:"海風小築",coins:3200},{name:"月光養蚌人",coins:7800},{name:"藍灣公主",coins:15000},{name:"老船長的寶藏",coins:26000},{name:"深海收藏家",coins:48000}];
+const FEED_MSG=["在星藍海域發現了稀有的幻彩蚌！","的玫瑰蚌產出了 S 級珍珠！","完成了一筆大訂單，賺得盆滿缽滿！","把 SS 級珍珠放上展示櫃，引來圍觀！","的手串被一位貴婦高價買走！","敲蚌一次成功，全場歡呼！","的皇冠作品在拍賣會上拍出天價！"];
+
+/* ================= 狀態 ================= */
+let S;
+function newState(){return{coins:500,day:1,oysters:[],pearls:[],products:[],orders:[],displayId:null,
+ uid:1,placedPending:null,music:true,stats:{cracked:0,sold:0}};}
+function save(){localStorage.setItem("pearlBaySave",JSON.stringify(S));toast("💾 已儲存進度");}
+function load(){try{const d=localStorage.getItem("pearlBaySave");return d?JSON.parse(d):null;}catch(e){return null;}}
+function fmt(n){return n>=10000?(n/10000).toFixed(2)+"萬":Math.round(n).toLocaleString();}
+
+/* ================= 音效引擎(WebAudio 合成) ================= */
+let AC=null,master,musicG,sfxG,musicTimer=null,mi=0;
+function initAudio(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();
+ master=AC.createGain();master.gain.value=0.55;master.connect(AC.destination);
+ musicG=AC.createGain();musicG.gain.value=0.35;musicG.connect(master);
+ sfxG=AC.createGain();sfxG.gain.value=0.9;sfxG.connect(master);startMusic();}catch(e){}}
+function tone(f,d,type,v,dest,slide){if(!AC)return;const o=AC.createOscillator(),g=AC.createGain();
+ o.type=type||"sine";o.frequency.setValueAtTime(f,AC.currentTime);
+ if(slide)o.frequency.exponentialRampToValueAtTime(slide,AC.currentTime+d);
+ g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+d);
+ o.connect(g);g.connect(dest||sfxG);o.start();o.stop(AC.currentTime+d+0.02);}
+function sfx(n){
+ switch(n){
+  case "click":tone(650,.06,"square",.12);break;
+  case "buy":tone(880,.09,"sine",.2);setTimeout(()=>tone(1320,.12,"sine",.2),80);break;
+  case "splash":tone(300,.25,"sine",.25,null,80);tone(200,.3,"triangle",.12);break;
+  case "knock":tone(180,.07,"square",.3);tone(90,.05,"sine",.2);break;
+  case "miss":tone(110,.12,"sawtooth",.2);break;
+  case "crackok":tone(520,.08,"triangle",.25);setTimeout(()=>tone(780,.1,"triangle",.25),70);break;
+  case "open":tone(392,.15,"sine",.25);setTimeout(()=>tone(523,.15,"sine",.25),120);setTimeout(()=>tone(659,.2,"sine",.25),240);setTimeout(()=>tone(784,.35,"sine",.3),360);break;
+  case "fail":tone(220,.4,"sawtooth",.3,null,110);setTimeout(()=>tone(160,.5,"sawtooth",.3,null,80),180);break;
+  case "coin":tone(988,.07,"square",.15);setTimeout(()=>tone(1319,.25,"square",.15),70);break;
+  case "step":tone(440+Math.random()*220,.1,"triangle",.2);break;
+  case "done":[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.25,"sine",.25),i*110));break;
+  case "tip":tone(1568,.12,"sine",.15);setTimeout(()=>tone(2093,.18,"sine",.15),90);break;
+  case "day":tone(660,.2,"sine",.2);setTimeout(()=>tone(880,.3,"sine",.2),160);break;
+ }}
+const MELODY=[262,330,392,523,392,330,294,370,440,587,440,370,330,415,494,659];
+function startMusic(){if(musicTimer||!AC)return;
+ const step=()=>{if(!S||S.music){const f=MELODY[mi%MELODY.length];
+   tone(f,.42,"sine",.5,musicG);tone(f/2,.5,"triangle",.3,musicG);if(mi%4===0)tone(65,.9,"sine",.35,musicG);
+   if(mi%8===4)tone(f*1.5,.3,"sine",.15,musicG);mi++;}
+  musicTimer=setTimeout(step,340);};step();}
+</script>
+<script>
+"use strict";
+/* ================= UI 工具 ================= */
+const $=s=>document.querySelector(s);
+function toast(msg,gold){const t=document.createElement("div");t.className="toast"+(gold?" gold":"");t.textContent=msg;
+ $("#toasts").appendChild(t);setTimeout(()=>{t.style.opacity="0";t.style.transition="opacity .5s";setTimeout(()=>t.remove(),500);},2400);}
+function openModal(title,html){$("#modalTitle").textContent=title;$("#modalBody").innerHTML=html;$("#modal").classList.add("on");sfx("click");}
+function closeModal(){$("#modal").classList.remove("on");}
+document.addEventListener("click",e=>{if(e.target.id==="modal"||e.target.hasAttribute("data-close"))closeModal();});
+function pearlStyle(p){return "background:radial-gradient(circle at 35% 30%,#ffffff,"+p.color+" 55%,"+p.color2+")";}
+function gradeOf(score){for(const g of GRADES)if(score<g[1])return{name:g[0],color:g[2],mult:g[3]};return{name:"SSS",color:"#c0392b",mult:3.2};}
+
+/* ================= 珍珠生成 ================= */
+function makePearl(rarity,damaged){
+ const r=RARITIES[rarity];
+ const luster=Math.min(100,Math.round(20+rarity*9+Math.random()*60));
+ const shape=Math.min(100,Math.round(15+rarity*8+Math.random()*65));
+ const size=+(5+rarity*0.9+Math.random()*6).toFixed(1);
+ const score=Math.min(100,luster*.38+shape*.32+size*2);
+ const g=gradeOf(score);
+ let color=r.colors[0],color2=r.colors[1];
+ if(rarity===7){const h=Math.floor(Math.random()*360);color="hsl("+h+",80%,72%)";color2="hsl("+((h+60)%360)+",85%,80%)";}
+ let value=r.base*(0.35+score/100)*g.mult*(damaged?0.3:1);
+ value=Math.max(5,Math.round(value));
+ return{id:S.uid++,rarity,luster,shape,size,score:Math.round(score),grade:g.name,gradeColor:g.color,color,color2,value,damaged:!!damaged,
+  pname:(damaged?"受損的":"")+r.name.replace("蚌","")+"珍珠"};}
+
+/* ================= 海域(等距 3D) ================= */
+const cv=$("#seaCanvas"),ctx=cv.getContext("2d");
+let VW=0,VH=0,hoverCell=null;
+function resize(){VW=cv.width=innerWidth;VH=cv.height=innerHeight;}
+addEventListener("resize",resize);resize();
+const GW=10,GH=7,TW=86,TH=44;
+function cellXY(i,j){return{x:VW/2+(i-j)*TW/2,y:VH*0.36+(i+j)*TH/2};}
+function drawSea(t){
+ const g=ctx.createLinearGradient(0,0,0,VH);g.addColorStop(0,"#8fd8ea");g.addColorStop(.35,"#2b93b3");g.addColorStop(1,"#0b3d51");
+ ctx.fillStyle=g;ctx.fillRect(0,0,VW,VH);
+ // 太陽光暈
+ ctx.fillStyle="rgba(255,240,180,.9)";ctx.beginPath();ctx.arc(VW*.85,70,42,0,7);ctx.fill();
+ ctx.fillStyle="rgba(255,240,180,.25)";ctx.beginPath();ctx.arc(VW*.85,70,80,0,7);ctx.fill();
+ // 波光
+ for(let k=0;k<26;k++){ctx.fillStyle="rgba(255,255,255,"+(0.05+0.05*Math.sin(t/600+k))+")";
+  ctx.beginPath();ctx.ellipse((k*173+t/40)%VW,VH*.55+((k*97)%Math.max(1,VH*.4)),30+(k%5)*10,4,0,0,7);ctx.fill();}
+ // 沙灘
+ ctx.fillStyle="#f0dfb5";ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(VW,0);ctx.lineTo(VW,60);
+ ctx.quadraticCurveTo(VW/2,120,0,60);ctx.closePath();ctx.fill();
+ ctx.strokeStyle="rgba(122,82,48,.35)";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,60);
+ ctx.quadraticCurveTo(VW/2,120,VW,60);ctx.stroke();
+ // 海域格子
+ for(let i=0;i<GW;i++)for(let j=0;j<GH;j++){
+  const{x,y}=cellXY(i,j);const occ=S.oysters.some(o=>o.i===i&&o.j===j);
+  ctx.beginPath();ctx.moveTo(x,y-TH/2);ctx.lineTo(x+TW/2,y);ctx.lineTo(x,y+TH/2);ctx.lineTo(x-TW/2,y);ctx.closePath();
+  if(hoverCell&&hoverCell.i===i&&hoverCell.j===j&&!occ){ctx.fillStyle=S.placedPending?"rgba(245,197,66,.75)":"rgba(255,255,255,.3)";}
+  else ctx.fillStyle=(i+j)%2?"rgba(255,255,255,.13)":"rgba(255,255,255,.08)";
+  ctx.fill();ctx.strokeStyle="rgba(255,255,255,.25)";ctx.lineWidth=1;ctx.stroke();
+  if(occ){ctx.fillStyle="rgba(0,40,60,.25)";ctx.beginPath();ctx.ellipse(x,y+4,30,12,0,0,7);ctx.fill();}}
+ // 珍珠蚌
+ ctx.textAlign="center";ctx.textBaseline="middle";
+ for(const o of S.oysters){const{x,y}=cellXY(o.i,o.j);const r=RARITIES[o.rarity];
+  const bob=Math.sin(t/500+o.id)*3;
+  if(o.ready){ctx.fillStyle="rgba(255,255,200,"+(0.25+0.2*Math.sin(t/300+o.id))+")";
+   ctx.beginPath();ctx.arc(x,y-14,26,0,7);ctx.fill();}
+  ctx.font="34px serif";ctx.fillText("🦪",x,y-8+bob);
+  // 稀有度光環
+  ctx.strokeStyle=r.colors[0];ctx.lineWidth=2;ctx.globalAlpha=.8;
+  ctx.beginPath();ctx.ellipse(x,y+6,24,10,0,0,7);ctx.stroke();ctx.globalAlpha=1;
+  if(!o.ready){const p=Math.min(1,(Date.now()-o.born)/o.matTime);
+   ctx.strokeStyle="#0b3d51";ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y-34,10,0,7);ctx.stroke();
+   ctx.strokeStyle="#f5c542";ctx.beginPath();ctx.arc(x,y-34,10,-Math.PI/2,-Math.PI/2+p*Math.PI*2);ctx.stroke();}
+  else{ctx.font="bold 12px sans-serif";ctx.fillStyle="#fff";ctx.strokeStyle="#000";ctx.lineWidth=3;
+   ctx.strokeText("可採收!",x,y-46);ctx.fillText("可採收!",x,y-46);}}
+ // 路口牌子
+ ctx.font="26px serif";ctx.fillText("🪧",VW/2-360,VH*0.30);
+}
+function loop(t){if($("#game").classList.contains("on"))drawSea(t);requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+// 滑鼠格位
+cv.addEventListener("mousemove",e=>{
+ const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;hoverCell=null;
+ for(let i=0;i<GW;i++)for(let j=0;j<GH;j++){const c=cellXY(i,j);
+  if(Math.abs(mx-c.x)/(TW/2)+Math.abs(my-c.y)/(TH/2)<=1){hoverCell={i,j};break;}}
+ cv.style.cursor=hoverCell?"pointer":"default";});
+cv.addEventListener("click",()=>{
+ if(!hoverCell)return;
+ const o=S.oysters.find(o=>o.i===hoverCell.i&&o.j===hoverCell.j);
+ if(o){if(o.ready){startCrack(o);}else toast("這隻蚌還在成長中…");return;}
+ if(S.placedPending!==null){placeOyster(hoverCell.i,hoverCell.j);return;}
+ toast("先到「珍珠蚌商店」買蚌苗吧！");});
+
+function scheduleMaturity(o){
+ const left=o.born+o.matTime-Date.now();
+ if(left<=0){o.ready=true;return;}
+ setTimeout(()=>{const cur=S.oysters.find(x=>x.id===o.id);
+  if(cur&&!cur.ready){cur.ready=true;toast("🦪 一隻"+RARITIES[cur.rarity].name+"成熟了，快來採收！");}},left);}
+/* ================= 放置 / 購買 ================= */
+function placeOyster(i,j){
+ if(S.oysters.some(o=>o.i===i&&o.j===j)){toast("❌ 這裡已經有蚌了，不能重疊！");return;}
+ const r=S.placedPending;S.placedPending=null;$("#placeTip").classList.remove("on");
+ const matTime=(18+r.rarity*7)*1000;
+ const o={id:S.uid++,rarity:r.rarity,i,j,born:Date.now(),matTime,ready:false};
+ S.oysters.push(o);scheduleMaturity(o);
+ sfx("splash");toast("🌊 放置了 "+r.name+"，等待成熟…");updateHUD();}
+function buyOyster(r){if(S.coins<r.price){toast("💰 金幣不足！",true);sfx("fail");return;}
+ S.coins-=r.price;sfx("buy");closeModal();
+ S.placedPending=r;$("#placeTip").classList.add("on");updateHUD();
+ toast("📍 點擊海域空地放置 "+r.name);}
+
+/* ================= 珍珠蚌商店 ================= */
+function openShop(){
+ let html='<div class="cardGrid">';
+ RARITIES.forEach((r,idx)=>{const can=S.coins>=r.price;
+  html+='<div class="oCard"><div class="oImg">'+r.icon+'</div><div class="oName">'+r.name+'</div>'
+  +'<div class="oStars">'+"★".repeat(r.stars)+"☆".repeat(5-r.stars)+'</div>'
+  +'<div class="oDesc">'+r.desc+'</div>'
+  +'<button class="buyBtn" data-buy="'+idx+'" '+(can?"":"disabled")+'>💰 '+fmt(r.price)+'</button></div>';});
+ html+='</div><p style="margin-top:12px;font-size:12px;color:#8a7a5e">💡 越稀有的蚌越貴、產出珍珠的價值也越高。購買後請點擊海域空地放置(不可重疊)。</p>';
+ openModal("🦪 珍珠蚌商店",html);
+ $("#modalBody").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>buyOyster(RARITIES[+b.dataset.buy]));}
+
+/* ================= HUD ================= */
+function updateHUD(){$("#coinVal").textContent=fmt(S.coins);$("#dayVal").textContent=S.day;
+ $("#oysterCount").textContent=S.oysters.length;
+ // 展示櫃
+ const dp=S.pearls.find(p=>p.id===S.displayId);
+ if(dp){$("#casePearl").style.cssText=pearlStyle(dp);$("#casePearl").textContent=dp.grade;
+  $("#casePearl").style.color="#fff";$("#caseName").textContent=dp.pname+"("+dp.grade+"級)";
+  $("#caseValue").textContent="💰 "+fmt(dp.value);}
+ else{$("#casePearl").style.background="#9fb6c0";$("#casePearl").textContent="?";
+  $("#caseName").textContent="尚未展示";$("#caseValue").textContent="";}}
+
+/* ================= 展示櫃 ================= */
+$("#displayCase").onclick=()=>{
+ if(!S.pearls.length){openModal("🏛️ 展示櫃","<p>你還沒有珍珠，先去敲蚌吧！</p>");return;}
+ let html='<p style="font-size:12px;color:#8a7a5e;margin-bottom:10px">選一顆珍珠展示在養殖場路口，其他玩家會來參觀並留下小費喔！</p><div class="pearlGrid">';
+ S.pearls.forEach(p=>{html+='<div class="pearlItem" data-disp="'+p.id+'"><div class="pearlBall" style="'+pearlStyle(p)+'"></div>'
+  +'<span class="gBadge" style="background:'+p.gradeColor+'">'+p.grade+'</span>'
+  +'<div class="pearlinfo pearlInfo">'+p.pname+'<br>💰 '+fmt(p.value)+'</div></div>';});
+ html+='</div>';
+ openModal("🏛️ 選擇展示珍珠",html);
+ $("#modalBody").querySelectorAll("[data-disp]").forEach(el=>el.onclick=()=>{
+  S.displayId=+el.dataset.disp;sfx("done");closeModal();updateHUD();
+  toast("🏛️ 展示櫃已更新，客人即將上門…");});};
+
+/* ================= 多人模擬(排行榜+動態+訪客) ================= */
+function renderLeader(){
+ const all=[...NPCS.map(n=>({name:n.name,coins:n.coins})),{name:"你 ⭐",coins:S.coins,me:true}];
+ all.sort((a,b)=>b.coins-a.coins);
+ $("#leaderList").innerHTML=all.map((n,i)=>'<div class="mRow'+(n.me?" me":"")+'"><span>'+["🥇","🥈","🥉"][i]||(i+1)+'. '+n.name+'</span><span>'+fmt(n.coins)+'</span></div>').join("");}
+function feedMsg(msg){const d=document.createElement("div");d.textContent=msg;$("#feed").prepend(d);
+ while($("#feed").children.length>6)$("#feed").lastChild.remove();}
+setInterval(()=>{if(!S)return;NPCS.forEach(n=>n.coins+=Math.floor(Math.random()*300));
+ if(Math.random()<.6)feedMsg("🏝️ "+NPCS[Math.floor(Math.random()*NPCS.length)].name+FEED_MSG[Math.floor(Math.random()*FEED_MSG.length)]);
+ renderLeader();},9000);
+// 訪客小費
+setInterval(()=>{if(!S||!S.displayId)return;if(Math.random()<.65){
+ const dp=S.pearls.find(p=>p.id===S.displayId);if(!dp)return;
+ const tip=Math.max(5,Math.round(dp.value*0.02*(0.5+Math.random())));S.coins+=tip;sfx("tip");
+ const v=["路過的旅客","隔壁島的漁夫","珍珠鑑定師","可愛的小妹","帆船船長"][Math.floor(Math.random()*5)];
+ feedMsg("🧍 "+v+" 參觀了你的展示櫃，留下 "+tip+" 金幣小費！");updateHUD();}},20000);
+// 日期
+setInterval(()=>{if(!S)return;S.day++;sfx("day");genOrders();toast("🌅 第 "+S.day+" 天，訂單已更新！",true);updateHUD();},60000);
+
+/* ================= 訂單生成 ================= */
+function genOrders(){S.orders=[];
+ for(let k=0;k<3;k++){const p=PRODUCTS[Math.floor(Math.random()*PRODUCTS.length)];
+  const gi=2+Math.floor(Math.random()*5);const g=GRADES[gi];
+  const bonus=1.6+Math.random()*0.9;
+  S.orders.push({id:S.uid++,pkey:p.key,gmin:g[0],gcolor:g[2],bonus:bonus,
+   reward:Math.round((p.fee+ (p.need* RARITIES[Math.min(7,gi)].base *g[3]) *p.mult)*bonus)});}}
+</script>
+<script>
+"use strict";
+/* ================= 敲蚌小遊戲 ================= */
+let CK=null; // {oyster,points[{x,y,hit}],hits,miss,hints,pearl,damaged}
+function startCrack(o){
+ CK={oyster:o,points:[],hits:0,miss:0,hints:3,pearl:null,damaged:false};
+ const area=$("#shellArea");area.querySelectorAll(".hitMark,.hintRing").forEach(e=>e.remove());
+ $("#shellTop").classList.remove("open");$("#crackPearl").className="";$("#crackPearl").style.cssText="";
+ $("#revealPanel").className="";$("#revealPanel").innerHTML="";$("#crackClose").style.display="none";
+ $("#hitCount").textContent="0";$("#missCount").textContent="0";$("#hintLeft").textContent="3";
+ $("#crackMsg").textContent="找出蚌殼上的 3 個敲擊點！";
+ // 隨機 3 個敲擊點(避開太近)
+ const W=area.clientWidth,H=area.clientHeight;
+ while(CK.points.length<3){const x=W*(0.24+Math.random()*0.52),y=H*(0.42+Math.random()*0.34);
+  if(CK.points.every(p=>Math.hypot(p.x-x,p.y-y)>70))CK.points.push({x,y,hit:false});}
+ // 畫出凸起小點(視覺提示)
+ CK.points.forEach(p=>{const d=document.createElement("div");
+  d.style.cssText="position:absolute;left:"+p.x+"px;top:"+p.y+"px;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c9a98c,#8a6a52);box-shadow:0 2px 3px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.5);z-index:4;";
+  d.className="bump";area.appendChild(d);p.el=d;});
+ $("#crackModal").classList.add("on");sfx("click");}
+$("#shellArea").addEventListener("click",e=>{
+ if(!CK||CK.pearl)return;
+ if(e.target.closest("#crackUI")||e.target.closest("#revealPanel"))return;
+ const area=$("#shellArea"),r=area.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+ const p=CK.points.find(p=>!p.hit&&Math.hypot(p.x-mx,p.y-my)<=30);
+ if(p){p.hit=true;CK.hits++;sfx("knock");p.el.style.background="radial-gradient(circle at 35% 30%,#fff,#f5c542)";
+  const m=document.createElement("div");m.className="hitMark";m.style.left=p.x+"px";m.style.top=p.y+"px";m.textContent="✓";
+  area.appendChild(m);$("#hitCount").textContent=CK.hits;
+  if(CK.hits>=3){sfx("crackok");setTimeout(()=>openShell(false),350);}
+  else $("#crackMsg").textContent="命中！還剩 "+(3-CK.hits)+" 個敲擊點";}
+ else{CK.miss++;$("#missCount").textContent=CK.miss;sfx("miss");
+  const sh=$("#crackSheet");sh.classList.remove("shake");void sh.offsetWidth;sh.classList.add("shake");
+  if(CK.miss>15){$("#crackMsg").textContent="💥 敲壞了…珍珠受損了！";sfx("fail");setTimeout(()=>openShell(true),600);}
+  else $("#crackMsg").textContent="敲錯了！("+CK.miss+"/15) 仔細看蚌殼上的凸起點";}});
+$("#hintBtn").onclick=()=>{
+ if(!CK||CK.pearl)return;
+ if(CK.hints<=0){toast("提示用完了！");return;}
+ const p=CK.points.find(p=>!p.hit);if(!p)return;
+ CK.hints--;$("#hintLeft").textContent=CK.hints;sfx("tip");
+ const ring=document.createElement("div");ring.className="hintRing";ring.style.left=p.x+"px";ring.style.top=p.y+"px";
+ $("#shellArea").appendChild(ring);setTimeout(()=>ring.remove(),1600);};
+function openShell(damaged){
+ CK.damaged=damaged;
+ CK.pearl=makePearl(CK.oyster.rarity,damaged);
+ $("#shellTop").classList.add("open");sfx("open");
+ const p=CK.pearl;const ball=$("#crackPearl");ball.style.cssText=pearlStyle(p);ball.classList.add("show");
+ setTimeout(()=>{const rp=$("#revealPanel");
+  rp.innerHTML="<h3>"+(damaged?"💔 珍珠受損…":"🎉 獲得珍珠！")+"</h3>"
+   +'<div style="font-size:46px;margin:4px 0">'+RARITIES[p.rarity].icon+"</div>"
+   +'<div class="rv">'+p.pname+'<br>評級 <span class="gBadge" style="background:'+p.gradeColor+';font-size:16px">'+p.grade+'</span>'
+   +"<br>珠光 "+p.luster+" · 形狀 "+p.shape+" · "+p.size+"mm"
+   +(damaged?'<br><span style="color:#c0392b;font-weight:800">受損！價值剩 30%</span>':"")
+   +"<br>💰 價值 "+fmt(p.value)+"</div>";
+  rp.classList.add("show");
+  if(p.grade==="SSS"||p.grade==="SS"){sfx("done");feedMsg("🌟 你 的養殖場產出了 "+p.grade+" 級珍珠，轟動全島！");}
+  $("#crackClose").style.display="block";},900);}
+$("#crackClose").onclick=()=>{
+ S.pearls.push(CK.pearl);S.stats.cracked++;
+ S.oysters=S.oysters.filter(o=>o.id!==CK.oyster.id);
+ $("#crackModal").classList.remove("on");CK=null;sfx("coin");updateHUD();
+ toast("💎 珍珠已放入背包");};
+
+/* ================= 加工商店 ================= */
+let selProduct=null,selPearls=[];
+function openCraft(){
+ selProduct=null;selPearls=[];
+ let html='<div class="cardGrid" style="margin-bottom:14px">';
+ PRODUCTS.forEach(p=>{html+='<div class="oCard" data-prod="'+p.key+'"><div class="oImg">'+p.icon+'</div>'
+  +'<div class="oName">'+p.name+'</div><div class="oDesc">需要 '+p.need+' 顆珍珠'+(p.key==="crown"?"<br>(全部A級以上)":"")
+  +'<br>加工費 💰'+p.fee+' · 售價約 '+p.mult+'倍</div></div>';});
+ html+='</div><div id="pearlPick"></div>';
+ openModal("🔧 加工商店",html);
+ $("#modalBody").querySelectorAll("[data-prod]").forEach(el=>el.onclick=()=>{
+  $("#modalBody").querySelectorAll("[data-prod]").forEach(x=>x.style.borderColor="#e0d3b3");
+  el.style.borderColor="var(--gold)";selProduct=PRODUCTS.find(p=>p.key===el.dataset.prod);selPearls=[];
+  renderPearlPick();sfx("click");});}
+function renderPearlPick(){
+ const box=$("#pearlPick");if(!selProduct){box.innerHTML="";return;}
+ let html='<p style="font-size:13px;font-weight:800;margin-bottom:8px">🧺 選擇 '+selProduct.need+' 顆珍珠(已選 '+selPearls.length+'/'+selProduct.need+')</p>';
+ if(!S.pearls.length){html+="<p style='color:#8a7a5e;font-size:13px'>背包裡沒有珍珠，先去敲蚌吧！</p>";}
+ else{html+='<div class="pearlGrid">';
+  S.pearls.forEach(p=>{const ok=selProduct.key!=="crown"||["A","S","SS","SSS"].includes(p.grade);
+   html+='<div class="pearlItem'+(selPearls.includes(p.id)?" sel":"")+'" data-pick="'+p.id+'" style="'+(ok?"":"opacity:.35")+'">'
+   +'<div class="pearlBall" style="'+pearlStyle(p)+'"></div><span class="gBadge" style="background:'+p.gradeColor+'">'+p.grade+'</span>'
+   +'<div class="pearlInfo">💰'+fmt(p.value)+(p.damaged?"<br>⚠️受損":"")+'</div></div>';});
+  html+='</div>';}
+ const total=selPearls.reduce((a,id)=>a+S.pearls.find(p=>p.id===id).value,0);
+ html+='<div style="margin-top:12px;font-size:14px">預估成品價值：<b style="color:#c0392b">💰 '+fmt(total*selProduct.mult)+'</b>(含 '+selProduct.mult+' 倍工藝加成)</div>';
+ html+='<button class="bigBtn" id="craftBtn" '+(selPearls.length===selProduct.need&&S.coins>=selProduct.fee?"":"disabled")+'>🔧 開始加工(💰'+selProduct.fee+')</button>';
+ box.innerHTML=html;
+ box.querySelectorAll("[data-pick]").forEach(el=>el.onclick=()=>{
+  const id=+el.dataset.pick;
+  if(selPearls.includes(id))selPearls=selPearls.filter(x=>x!==id);
+  else{const pp=S.pearls.find(x=>x.id===id);
+   if(selProduct.key==="crown"&&!["A","S","SS","SSS"].includes(pp.grade)){toast("👑 皇冠需要 A 級以上的珍珠！");sfx("miss");return;}
+   if(selPearls.length<selProduct.need)selPearls.push(id);}
+  renderPearlPick();sfx("click");});
+ const cb=box.querySelector("#craftBtn");
+ if(cb)cb.onclick=()=>startCraft();}
+function startCraft(){
+ S.coins-=selProduct.fee;closeModal();sfx("buy");
+ const pearls=selPearls.map(id=>S.pearls.find(p=>p.id===id));
+ const total=pearls.reduce((a,p)=>a+p.value,0);
+ const minScore=Math.min(...pearls.map(p=>p.score));
+ const g=gradeOf(minScore);
+ const prod={id:S.uid++,key:selProduct.key,name:selProduct.name,icon:selProduct.icon,
+  value:Math.round(total*selProduct.mult),grade:g.name,gradeColor:g.color,pids:selPearls.slice()};
+ // 加工動畫 modal
+ const steps=PROC_STEPS.map((s,i)=>'<div class="procStep" id="ps'+i+'"><div class="pi">'+s[0]+'</div><div class="pt">'+s[1]+'</div></div>').join("");
+ openModal("🔧 加工中…",'<div id="procPearls">'+pearls.map(p=>'<span class="pearlBall" style="'+pearlStyle(p)+';display:inline-block;width:34px;height:34px;margin:0 2px"></span>').join("")+'</div>'
+  +'<div id="procSteps">'+steps+'</div><div id="procBar"><div id="procFill"></div></div>'
+  +'<p id="procMsg" style="text-align:center;margin-top:10px;font-size:13px;color:#8a7a5e">準備開始…</p>');
+ let step=0;
+ const iv=setInterval(()=>{
+  if(step<PROC_STEPS.length){const el=$("#ps"+step);if(el){el.classList.add("on");sfx("step");}
+   $("#procFill").style.width=((step+1)/PROC_STEPS.length*100)+"%";
+   $("#procMsg").textContent="步驟 "+(step+1)+"/4："+PROC_STEPS[step][1]+"中…";step++;}
+  else{clearInterval(iv);sfx("done");
+   S.pearls=S.pearls.filter(p=>!selPearls.includes(p.id));
+   S.products.push(prod);selProduct=null;selPearls=[];
+   setTimeout(()=>{openModal("✨ 加工完成！",'<div style="text-align:center;font-size:60px">'+prod.icon+'</div>'
+    +'<p style="text-align:center;font-size:16px;font-weight:800">'+prod.name+'(品質 '+prod.grade+')</p>'
+    +'<p style="text-align:center;color:#c0392b;font-weight:900;font-size:18px">💰 價值 '+fmt(prod.value)+'</p>'
+    +'<p style="text-align:center;font-size:12px;color:#8a7a5e">已放入背包，可到販售商店賣出或交付訂單</p>');
+    updateHUD();},400);}},900);}
+
+/* ================= 販售商店 ================= */
+function openSell(){
+ let html='<div style="display:flex;gap:8px;margin-bottom:12px">'
+  +'<button class="dockBtn" id="tabNormal" style="background:#1b8aa6">一般販售</button>'
+  +'<button class="dockBtn" id="tabOrder">訂單(訂製獎勵)</button></div><div id="sellBody"></div>';
+ openModal("💰 販售商店",html);
+ const showNormal=()=>{let h="";
+  if(!S.products.length)h="<p style='color:#8a7a5e;font-size:13px'>還沒有加工成品，先去加工商店吧！</p>";
+  else{S.products.forEach(pr=>{h+='<div class="pCard"><div class="pIcon">'+pr.icon+'</div><div class="pMid">'
+   +'<div class="pName">'+pr.name+' <span class="gBadge" style="background:'+pr.gradeColor+'">'+pr.grade+'</span></div>'
+   +'<div class="pReq">價值 💰 '+fmt(pr.value)+'</div></div>'
+   +'<button class="sellBtn" data-sell="'+pr.id+'">賣出 💰'+fmt(pr.value)+'</button></div>';});}
+  $("#sellBody").innerHTML=h;
+  $("#sellBody").querySelectorAll("[data-sell]").forEach(b=>b.onclick=()=>{
+   const pr=S.products.find(x=>x.id===+b.dataset.sell);S.coins+=pr.value;
+   S.products=S.products.filter(x=>x.id!==pr.id);S.stats.sold++;sfx("coin");
+   toast("💰 賣出 "+pr.name+" +"+fmt(pr.value),true);showNormal();updateHUD();});};
+ const showOrder=()=>{let h="<p style='font-size:12px;color:#8a7a5e;margin-bottom:8px'>📋 訂單由珍珠總價加成訂製獎勵，報酬比一般販售更高！</p>";
+  if(!S.orders.length)h+="<p>今日沒有訂單</p>";
+  else{S.orders.forEach(o=>{const p=PRODUCTS.find(x=>x.key===o.pkey);
+   const has=S.products.find(pr=>pr.key===o.pkey&&gradeRank(pr.grade)>=gradeRank(o.gmin));
+   h+='<div class="pCard"><div class="pIcon">'+p.icon+'</div><div class="pMid">'
+    +'<div class="pName">訂單：'+p.name+' × 1</div>'
+    +'<div class="pReq">需求：'+o.gmin+' 級以上<br>獎勵：<span class="orderBonus">💰 '+fmt(o.reward)+'</span>(訂製加成 '+o.bonus.toFixed(2)+'x)</div></div>'
+    +'<button class="sellBtn" data-order="'+o.id+'" '+(has?"":"disabled")+'>'+(has?"交付 ✓":"未達成")+'</button></div>';});}
+  $("#sellBody").innerHTML=h;
+  $("#sellBody").querySelectorAll("[data-order]").forEach(b=>b.onclick=()=>{
+   const o=S.orders.find(x=>x.id===+b.dataset.order);
+   const pr=S.products.find(x=>x.key===o.pkey&&gradeRank(x.grade)>=gradeRank(o.gmin));
+   if(!pr)return;S.coins+=o.reward;
+   S.products=S.products.filter(x=>x.id!==pr.id);S.orders=S.orders.filter(x=>x.id!==o.id);
+   sfx("done");toast("📋 完成訂單 +"+fmt(o.reward),true);showOrder();updateHUD();});};
+ const tn=$("#tabNormal"),to=$("#tabOrder");
+ tn.onclick=()=>{tn.style.background="#1b8aa6";to.style.background="rgba(6,34,46,.85)";showNormal();sfx("click");};
+ to.onclick=()=>{to.style.background="#1b8aa6";tn.style.background="rgba(6,34,46,.85)";showOrder();sfx("click");};
+ showNormal();}
+function gradeRank(g){return GRADES.findIndex(x=>x[0]===g);}
+function renderLeader(){ // 覆寫修正版
+ const all=[...NPCS.map(n=>({name:n.name,coins:n.coins})),{name:"你 ⭐",coins:S.coins,me:true}];
+ all.sort((a,b)=>b.coins-a.coins);
+ $("#leaderList").innerHTML=all.map((n,i)=>{
+  const medal=i<3?["🥇","🥈","🥉"][i]:(i+1)+".";
+  return '<div class="mRow'+(n.me?" me":"")+'"><span>'+medal+" "+n.name+'</span><span>'+fmt(n.coins)+"</span></div>";}).join("");}
+
+/* ================= 背包 ================= */
+function openInv(){
+ let html='<h4 style="margin-bottom:8px">💎 珍珠('+S.pearls.length+')</h4>';
+ if(S.pearls.length){html+='<div class="pearlGrid">';
+  S.pearls.forEach(p=>{html+='<div class="pearlItem"><div class="pearlBall" style="'+pearlStyle(p)+'"></div>'
+   +'<span class="gBadge" style="background:'+p.gradeColor+'">'+p.grade+'</span>'
+   +'<div class="pearlInfo">'+p.pname+'<br>珠光'+p.luster+'·形狀'+p.shape+'·'+p.size+'mm<br>💰 '+fmt(p.value)+(p.damaged?" ⚠️":"")+'</div></div>';});
+  html+='</div>';}else html+="<p style='font-size:13px;color:#8a7a5e'>空空如也，去敲蚌吧！</p>";
+ html+='<h4 style="margin:14px 0 8px">🎁 加工成品('+S.products.length+')</h4>';
+ if(S.products.length){S.products.forEach(pr=>{html+='<div class="pCard"><div class="pIcon">'+pr.icon+'</div><div class="pMid"><div class="pName">'
+  +pr.name+' <span class="gBadge" style="background:'+pr.gradeColor+'">'+pr.grade+'</span></div><div class="pReq">💰 '+fmt(pr.value)+'</div></div></div>';});}
+ else html+="<p style='font-size:13px;color:#8a7a5e'>尚無成品</p>";
+ html+='<p style="margin-top:12px;font-size:12px;color:#8a7a5e">📊 累計敲蚌 '+S.stats.cracked+' 次 · 成交 '+S.stats.sold+' 筆</p>';
+ openModal("🎒 我的物品",html);}
+
+/* ================= 事件綁定與啟動 ================= */
+$("#stallShop").onclick=openShop;
+$("#stallCraft").onclick=openCraft;
+$("#stallSell").onclick=openSell;
+$("#invBtn").onclick=openInv;
+$("#saveBtn").onclick=()=>{sfx("click");save();};
+$("#helpBtn").onclick=()=>{sfx("click");openModal("❓ 玩法說明",$("#howto").innerHTML.replace(/<b>/g,"<b style='color:#c0392b'>"));};
+$("#musicBtn").onclick=()=>{if(!S)return;S.music=!S.music;$("#musicBtn").textContent=S.music?"🎵":"🔇";sfx("click");};
+$("#startBtn").onclick=()=>{
+ initAudio();sfx("done");
+ S=load()||newState();genOrders();S.oysters.forEach(scheduleMaturity);
+ $("#startScreen").classList.add("hide");
+ $("#game").classList.add("on");
+ $("#musicBtn").textContent=S.music?"🎵":"🔇";
+ resize();updateHUD();renderLeader();
+ setTimeout(()=>toast("🚶 用 WASD 走到「珍珠蚌商店」按 E 買蚌苗吧!",true),800);};
+// 自動存檔
+setInterval(()=>{if(S&&$("#game").classList.contains("on")){try{localStorage.setItem("pearlBaySave",JSON.stringify(S));}catch(e){}}},30000);
+</script>
+<script>
+"use strict";
+/* ================= 真實多人連線(PeerJS / WebRTC) =================
+   星狀拓撲:房客連到房主,由房主轉發名冊/動態/參觀訊息 */
+const NET={peer:null,isHost:false,room:null,name:localStorage.getItem("pbName")||null,
+ players:{},hostConn:null,hb:null};
+const PREFIX="pearlbay-room-v1-";
+
+function myName(){
+ if(NET.name)return NET.name;
+ const n=prompt("給你的養殖場取個名字(其他玩家看得到):","珍珠農夫"+Math.floor(Math.random()*99));
+ NET.name=(n||"珍珠農夫").slice(0,12);localStorage.setItem("pbName",NET.name);return NET.name;}
+function netStatus(t){const el=$("#netStatus");if(el)el.textContent=t;}
+function myDisplay(){const dp=S?S.pearls.find(p=>p.id===S.displayId):null;
+ return dp?{pname:dp.pname,grade:dp.grade,gradeColor:dp.gradeColor,color:dp.color,color2:dp.color2,value:dp.value}:null;}
+function myState(){return{t:"state",coins:S?S.coins:0,display:myDisplay()};}
+
+/* ---- 房客:連線處理 ---- */
+function onGuestData(d){
+ if(d.t==="roster"){NET.players=d.players||{};renderLeader();}
+ else if(["chat","mkt-add","mkt-del","mkt-buy","mkt-sold","sea-req","sea-data"].indexOf(d.t)>=0){
+   socialRecv(c.peer,(NET.players[c.peer]||{name:"?"}).name,d);
+   Object.entries(NET.conns).forEach(([id2,cc])=>{if(id2!==c.peer&&cc.open)cc.send(d);});}
+ else if(d.t==="feed"){feedMsg(d.msg);}
+ else if(d.t==="visit"){ // 有人來參觀我的展示櫃
+  const dp=S.pearls.find(p=>p.id===S.displayId);
+  if(!dp){ if(NET.hostConn)NET.hostConn.send({t:"visited",target:d.from,by:NET.name+"（展示櫃是空的）"}); return;}
+  const tip=Math.min(500,Math.max(5,Math.round(dp.value*0.02*(0.5+Math.random()))));
+  S.coins+=tip;sfx("tip");updateHUD();
+  toast("🏛️ "+d.fromName+" 參觀了你的展示櫃，留下 "+tip+" 金幣！",true);
+  feedMsg("🧍 "+d.fromName+" 參觀了 "+NET.name+" 的展示櫃");
+  if(NET.hostConn)NET.hostConn.send({t:"visited",target:d.from,by:NET.name});}
+ else if(d.t==="visitAck"){toast("🏛️ 你參觀了 "+d.name+" 的展示櫃 +5 金幣參觀獎");S.coins+=5;sfx("coin");updateHUD();}
+ else if(["chat","mkt-add","mkt-del","mkt-buy","mkt-sold","sea-req","sea-data"].indexOf(d.t)>=0){socialRecv(d.from||"HOST",d.fromName||"房主",d);}}
+
+function joinRoom(code){
+ myName();closeModal();
+ if(NET.peer)try{NET.peer.destroy();}catch(e){}
+ NET.isHost=false;NET.room=code;NET.players={};
+ netStatus("🟡 連線中…");
+ NET.peer=new Peer({debug:0});
+ NET.peer.on("open",id=>{NET.myId=id;
+  const c=NET.peer.connect(PREFIX+code,{reliable:true});
+  NET.hostConn=c;
+  c.on("open",()=>{c.send({t:"join",name:NET.name});netStatus("🟢 房間 "+code+" 已連線");
+   toast("🟢 已加入房間 "+code+"！",true);sfx("done");
+   clearInterval(NET.hb);
+   NET.hb=setInterval(()=>{if(c.open)c.send(myState());},4000);});
+  c.on("data",onGuestData);
+  c.on("close",()=>{netStatus("🔴 與房主斷線");toast("🔴 房主已離線，回到單機模式");NET.players={};renderLeader();});
+  c.on("error",()=>{netStatus("🔴 連線失敗");toast("❌ 找不到房間 "+code);});});
+ NET.peer.on("error",e=>{netStatus("🔴 連線失敗:"+e.type);toast("❌ 連線失敗("+e.type+")");});}
+
+/* ---- 房主:接受連線 ---- */
+function broadcastRoster(){
+ const roster={t:"roster",players:NET.players};
+ Object.values(NET.conns||{}).forEach(c=>{if(c.open)c.send(roster);});}
+function hostAccept(c){
+ c.on("data",d=>{
+  if(d.t==="join"){NET.players[c.peer]={name:d.name,coins:0,display:null};
+   broadcastRoster();feedMsg("🎉 "+d.name+" 進入了海灣！");renderLeader();}
+  else if(d.t==="state"){const p=NET.players[c.peer];
+   if(p){p.coins=d.coins;p.display=d.display;renderLeader();}}
+  else if(d.t==="feed"){feedMsg(d.msg);
+   Object.entries(NET.conns).forEach(([id,cc])=>{if(id!==c.peer&&cc.open)cc.send(d);});}
+  else if(d.t==="visit"){hostVisit(d.target,c);}
+  else if(d.t==="visited"){const vc=NET.conns[d.target];
+   if(vc&&vc.open)vc.send({t:"visitAck",name:d.by});}});
+ c.on("close",()=>{const p=NET.players[c.peer];
+  if(p){feedMsg("👋 "+p.name+" 離開了海灣");delete NET.players[c.peer];broadcastRoster();renderLeader();}});}
+function hostVisit(target,fromConn){
+ const vn=(NET.players[fromConn.peer]||{name:NET.name}).name;
+ // 參觀對象是房主自己
+ if(target==="HOST"){const dp=S.pearls.find(p=>p.id===S.displayId);
+  if(dp){const tip=Math.min(500,Math.max(5,Math.round(dp.value*0.02*(0.5+Math.random()))));
+   S.coins+=tip;sfx("tip");updateHUD();
+   toast("🏛️ "+vn+" 參觀了你的展示櫃，留下 "+tip+" 金幣！",true);}
+  fromConn.send({t:"visitAck",name:NET.name});return;}
+ // 轉發給目標房客
+ const tc=NET.conns[target];
+ if(tc&&tc.open)tc.send({t:"visit",from:fromConn.peer,fromName:vn});
+ else fromConn.send({t:"visitAck",name:"（對方已離線）"});}
+function createRoom(){
+ myName();closeModal();
+ if(NET.peer)try{NET.peer.destroy();}catch(e){}
+ const code=Array.from({length:4},()=>"ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*31)]).join("");
+ NET.isHost=true;NET.myId="HOST";NET.room=code;NET.players={};NET.conns={};
+ netStatus("🟡 創建房間中…");
+ NET.peer=new Peer(PREFIX+code,{debug:0});
+ NET.peer.on("open",()=>{netStatus("🟢 房間 "+code+" · 你是房主");
+  openModal("🔗 房間已創建！",'<p style="text-align:center;font-size:15px">把你的房間代碼分享給朋友:</p>'
+   +'<p style="text-align:center;font-size:36px;font-weight:900;letter-spacing:.3em;color:#c0392b;margin:10px 0">'+code+'</p>'
+   +'<p style="text-align:center;font-size:12px;color:#8a7a5e">朋友在右側點「加入房間」輸入代碼即可進入同一海域。<br>需要網路連線;玩家會即時看到你的財富與展示櫃,可互相參觀。</p>');
+  sfx("done");toast("🔗 房間 "+code+" 已開啟！",true);});
+ NET.peer.on("connection",c=>{NET.conns[c.peer]=c;hostAccept(c);});
+ NET.peer.on("error",e=>{netStatus("🔴 錯誤:"+e.type);});
+ clearInterval(NET.hb);
+ NET.hb=setInterval(()=>{broadcastRoster();},5000);}
+
+/* ---- 參觀其他玩家 ---- */
+function visitPlayer(id){
+ if(!NET.isHost&&!NET.hostConn){toast("先創建或加入房間才能拜訪玩家");return;}
+ if(NET.isHost){const c=NET.conns[id];
+  if(c&&c.open){hostVisit(id,{peer:"HOST"});}
+  else toast("對方已離線");}
+ else if(NET.hostConn&&NET.hostConn.open)NET.hostConn.send({t:"visit",target:id});}
+
+/* ---- 動態廣播:包裝 feedMsg ---- */
+const _feedMsg=feedMsg;
+feedMsg=function(msg){_feedMsg(msg);
+ if(!NET.peer)return;
+ if(NET.isHost){const d={t:"feed",msg:msg};Object.values(NET.conns).forEach(c=>{if(c.open)c.send(d);});}
+ else if(NET.hostConn&&NET.hostConn.open)NET.hostConn.send({t:"feed",msg:msg});};
+
+/* ---- 排行榜(含真實玩家+參觀按鈕) ---- */
+renderLeader=function(){
+ const rows=[];
+ Object.entries(NET.players).forEach(([id,p])=>rows.push({name:"🌐 "+p.name,coins:p.coins,real:true,id:id,display:p.display}));
+ NPCS.forEach(n=>rows.push({name:n.name,coins:n.coins}));
+ rows.push({name:"你 ⭐",coins:S?S.coins:0,me:true});
+ rows.sort((a,b)=>b.coins-a.coins);
+ $("#leaderList").innerHTML=rows.slice(0,8).map((n,i)=>{
+  const medal=i<3?["🥇","🥈","🥉"][i]:(i+1)+".";
+  const d=n.display?(' title="展示櫃:'+n.display.pname+"("+n.display.grade+"級) 💰"+fmt(n.display.value)+'"'):"";
+  const click=n.real?(' data-visit="'+n.id+'" style="cursor:pointer"'):d;
+  return '<div class="mRow'+(n.me?" me":"")+'"'+click+'><span>'+medal+" "+n.name+(n.display?" 🏛️":"")+'</span><span>'+fmt(n.coins)+"</span></div>";}).join("");
+ $("#leaderList").querySelectorAll("[data-visit]").forEach(el=>el.onclick=()=>{sfx("click");visitPlayer(el.dataset.visit);});};
+
+/* ---- 按鈕 ---- */
+$("#createRoomBtn").onclick=()=>{sfx("click");createRoom();};
+$("#joinRoomBtn").onclick=()=>{sfx("click");
+ if(typeof Peer==="undefined"){toast("❌ 連線函式庫載入失敗,請確認網路後重新整理");return;}
+ const code=(prompt("輸入房間代碼(4碼):","")||"").toUpperCase().trim();
+ if(code.length!==4){toast("❌ 代碼是4個英數字");return;}
+ joinRoom(code);};
+</script>
+<script>
+"use strict";
+/* ================= WebSocket 伺服器模式(優先) =================
+   遊戲由 server.js 托管時自動啟用: 玩家打開同一網址即可連線;
+   直接開檔案(無伺服器)時自動退回 PeerJS 房間代碼模式。 */
+const WSN={mode:false,players:{},room:null,name:null,ws:null};
+(function(){
+ if(location.protocol==="file:"||!location.host)return;
+ let ws; try{ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host);}catch(e){return;}
+ const giveup=setTimeout(()=>{try{ws.close();}catch(e){}},2500);
+ WSN.ws=ws;
+ ws.onopen=()=>{try{ws.send(JSON.stringify({t:"probe"}));}catch(e){}};
+ ws.onmessage=(ev)=>{let d;try{d=JSON.parse(ev.data);}catch(e){return;}
+  if(d.t==="pong"&&!WSN.mode){clearTimeout(giveup);activateWS();}
+  else if(d.t==="joined"){WSN.room=d.room;WSN.myId=d.id;WSN.players={};
+   d.peers.forEach(p=>WSN.players[p.id]={name:p.name,coins:0,display:null});
+   netStatus("🟢 房間 "+d.room+" · "+(d.peers.length+1)+" 人在線");
+   toast("🟢 已連線房間 "+d.room+"(線上 "+(d.peers.length+1)+" 人)",true);sfx("done");
+   wsSend({t:"feed",msg:"🎉 "+WSN.name+" 進入了海灣！"});
+   clearInterval(WSN.hb);WSN.hb=setInterval(()=>{wsSend({t:"state",coins:S?S.coins:0,display:myDisplay()});},4000);
+   wsSend({t:"state",coins:S?S.coins:0,display:myDisplay()});renderLeader();}
+  else if(d.t==="peer-join"){WSN.players[d.id]={name:d.name,coins:0,display:null};
+   feedMsg("🎉 "+d.name+" 進入了海灣！");renderLeader();}
+  else if(d.t==="peer-leave"){const p=WSN.players[d.id];delete WSN.players[d.id];
+   if(p)feedMsg("👋 "+p.name+" 離開了海灣");netStatus("🟢 房間 "+WSN.room+" · "+(Object.keys(WSN.players).length+1)+" 人在線");renderLeader();}
+  else if(d.t==="msg"){const m=d.data||{};
+   if(m.t==="state"){const p=WSN.players[d.from];if(p){p.coins=m.coins;p.display=m.display;renderLeader();}}
+   else if(m.t==="feed"){_feedMsg(m.msg);}
+   else if(m.t==="visit"){ // 有人參觀我的展示櫃
+    const dp=S.pearls.find(p=>p.id===S.displayId);
+    if(!dp){wsSend({t:"visited",by:NET.name+"（展示櫃是空的）",to:d.from});return;}
+    const tip=Math.min(500,Math.max(5,Math.round(dp.value*0.02*(0.5+Math.random()))));
+    S.coins+=tip;sfx("tip");updateHUD();
+    toast("🏛️ "+d.fromName+" 參觀了你的展示櫃，留下 "+tip+" 金幣！",true);
+    wsSend({t:"visited",by:NET.name,to:d.from});}
+   else if(m.t==="visited"&&m.to===WSN.myId){ // 我參觀的結果
+    toast("🏛️ 你參觀了 "+m.by+" 的展示櫃 +5 金幣參觀獎");S.coins+=5;sfx("coin");updateHUD();}
+   else if(m.t==="pos"){posRecv(d.from,d.fromName,m);}
+   else if(m.t==="chat"){chatRecv(d.fromName,m.msg);}
+   else if(m.t==="mkt-add"){mktAddRemote(d.from,d.fromName,m);}
+   else if(m.t==="mkt-del"){mktDelRemote(m);}
+   else if(m.t==="mkt-buy"){mktBuyReq(d.from,d.fromName,m.lid);}
+   else if(m.t==="mkt-sold"){mktSold(m);}
+   else if(m.t==="sea-req"){if(String(m.target)===String(myId()))seaReply(d.from);}
+   else if(m.t==="sea-data"){if(String(m.to)===String(myId()))seaShow(m);}}};
+ ws.onclose=()=>{if(WSN.mode){WSN.mode=false;netStatus("🔴 與伺服器斷線,已退回單機");toast("🔴 連線中斷");}};
+ ws.onerror=()=>{clearTimeout(giveup);};
+ function activateWS(){WSN.mode=true;
+  netStatus("🟢 已連線多人伺服器");
+  feedMsg("🌐 多人伺服器模式:點「創建多人房間」開房,朋友輸入同一代碼即可加入");}
+ function wsSend(data){if(ws.readyState===1)ws.send(JSON.stringify({t:"msg",data:data}));}
+ WSN.send=wsSend;
+ // 覆寫按鈕:伺服器模式下用 WebSocket,否則退回 PeerJS
+ $("#createRoomBtn").onclick=()=>{sfx("click");
+  if(WSN.mode){const code=Array.from({length:4},()=>"ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*31)]).join("");
+   WSN.name=myName();
+   ws.send(JSON.stringify({t:"join",room:code,name:WSN.name}));
+   setTimeout(()=>{if(WSN.room===code){openModal("🔗 房間已創建！",'<p style="text-align:center;font-size:15px">把網址+房間代碼分享給朋友:</p>'
+    +'<p style="text-align:center;font-size:14px;margin-top:6px">'+location.origin+'</p>'
+    +'<p style="text-align:center;font-size:36px;font-weight:900;letter-spacing:.3em;color:#c039b2;margin:10px 0">'+code+'</p>'
+    +'<p style="text-align:center;font-size:12px;color:#8a7a5e">朋友開啟網址後,點「加入房間」輸入代碼即可進入同一海域。</p>');sfx("done");}},400);}
+  else createRoom();};
+ $("#joinRoomBtn").onclick=()=>{sfx("click");
+  const code=(prompt("輸入房間代碼(4碼):","")||"").toUpperCase().trim();
+  if(code.length!==4){toast("❌ 代碼是4個英數字");return;}
+  if(WSN.mode){WSN.name=myName();ws.send(JSON.stringify({t:"join",room:code,name:WSN.name}));}
+  else{ if(typeof Peer==="undefined"){toast("❌ 連線函式庫載入失敗,請確認網路後重新整理");return;} joinRoom(code);}};
+ // 排行榜:合併 WebSocket 玩家 + PeerJS 玩家 + NPC
+ renderLeader=function(){
+  const rows=[];
+  Object.entries(WSN.players).forEach(([id,p])=>rows.push({name:"🌐 "+p.name,coins:p.coins,real:true,id:id,ws:true,display:p.display}));
+  Object.entries(NET.players).forEach(([id,p])=>rows.push({name:"🌐 "+p.name,coins:p.coins,real:true,id:id,ws:false,display:p.display}));
+  NPCS.forEach(n=>rows.push({name:n.name,coins:n.coins}));
+  rows.push({name:"你 ⭐",coins:S?S.coins:0,me:true});
+  rows.sort((a,b)=>b.coins-a.coins);
+  const online=WSN.mode?(Object.keys(WSN.players).length+1):(NET.peer?(Object.keys(NET.players).length+1):0);
+  $("#leaderList").innerHTML='<div style="text-align:center;font-size:10px;color:#8fd8ea;margin-bottom:4px">— 在線 '+online+' 人 · 點玩家可參觀展示櫃 —</div>'
+   +rows.slice(0,8).map((n,i)=>{
+   const medal=i<3?["🥇","🥈","🥉"][i]:(i+1)+".";
+   const tip=n.display?(' title="展示櫃:'+n.display.pname+"("+n.display.grade+"級) 💰"+fmt(n.display.value)+'"'):"";
+   const click=n.real?(' data-visit="'+n.id+'" data-ws="'+(n.ws?1:0)+'" style="cursor:pointer"'):tip;
+   return '<div class="mRow'+(n.me?" me":"")+'"'+click+'><span>'+medal+" "+n.name+(n.display?" 🏛️":"")+'</span><span>'+fmt(n.coins)+"</span></div>";}).join("");
+  $("#leaderList").querySelectorAll("[data-visit]").forEach(el=>el.onclick=()=>{sfx("click");
+   if(el.dataset.ws==="1")WSN.send({t:"visit",target:+el.dataset.visit});
+   else visitPlayer(el.dataset.visit);});};
+ // 動態廣播(WebSocket)
+ const _feed4=feedMsg;
+ feedMsg=function(m){_feed4(m);if(WSN.mode)WSN.send({t:"feed",msg:m});};
+})();
+</script>
+<script>
+"use strict";
+/* ================= 社交層:聊天室 / 交易市場 / 拜訪海域 ================= */
+function myId(){return WSN.mode?WSN.myId:(NET.myId||"");}
+function curName(){return WSN.name||NET.name||"玩家";}
+function online(){return WSN.mode||NET.isHost||(NET.hostConn&&NET.hostConn.open);}
+function socialSend(data){
+ if(WSN.mode&&WSN.ws&&WSN.ws.readyState===1){WSN.send(data);return true;}
+ if(NET.isHost){Object.values(NET.conns||{}).forEach(c=>{if(c.open)c.send(data);});return true;}
+ if(NET.hostConn&&NET.hostConn.open){NET.hostConn.send(data);return true;}
+ return false;}
+function socialRecv(fromId,fromName,d){
+ switch(d.t){
+  case "pos":posRecv(fromId,fromName,d);break;
+  case "chat":chatRecv(fromName,d.msg);break;
+  case "mkt-add":mktAddRemote(fromId,fromName,d);break;
+  case "mkt-del":mktDelRemote(d);break;
+  case "mkt-buy":mktBuyReq(fromId,fromName,d.lid);break;
+  case "mkt-sold":mktSold(d);break;
+  case "sea-req":if(String(d.target)===String(myId()))seaReply(fromId);break;
+  case "sea-data":if(String(d.to)===String(myId()))seaShow(d);break;}}
+
+/* ---------- 聊天室 ---------- */
+function chatAdd(name,msg,sys){
+ const log=$("#chatLog");const div=document.createElement("div");
+ if(sys)div.className="sys";
+ div.innerHTML=sys?msg:("<b>"+name+":</b> "+msg.replace(/</g,"&lt;"));
+ log.appendChild(div);log.scrollTop=log.scrollHeight;
+ while(log.children.length>40)log.firstChild.remove();}
+function chatRecv(name,msg){
+ chatAdd(name,msg);
+ if(!$("#chatBox").classList.contains("on"))toast("🗨️ "+name+": "+msg.slice(0,30));
+ sfx("tip");}
+function chatSend(){
+ const inp=$("#chatInput"),msg=inp.value.trim();if(!msg)return;
+ if(!online()){toast("先連線(創建/加入房間)才能聊天");return;}
+ inp.value="";chatAdd(curName(),msg);socialSend({t:"chat",msg:msg});}
+$("#chatBtn").onclick=()=>{sfx("click");$("#chatBox").classList.toggle("on");$("#chatInput").focus();};
+$("#chatSend").onclick=chatSend;
+$("#chatInput").addEventListener("keydown",e=>{if(e.key==="Enter")chatSend();});
+chatAdd("系統","🌊 歡迎來到珍珠夢海灣聊天室！",true);
+
+/* ---------- 交易市場 ---------- */
+let MKT=[]; // {lid,sellerId,sellerName,kind,item,price,sold}
+function itemIcon(it,kind){
+ if(kind==="pearl")return '<span class="pearlBall" style="'+pearlStyle(it)+';display:inline-block;width:30px;height:30px;vertical-align:middle"></span>';
+ return '<span style="font-size:30px">'+it.icon+"</span>";}
+function itemLabel(it,kind){
+ return kind==="pearl"?(it.pname+"("+it.grade+"級)"):(it.name+"("+it.grade+"級)");}
+function mktAddRemote(sellerId,sellerName,d){
+ if(MKT.some(l=>l.lid===d.lid))return;
+ MKT.push({lid:d.lid,sellerId:String(sellerId),sellerName:sellerName,kind:d.kind,item:d.item,price:d.price,sold:false});
+ toast("🏪 "+sellerName+" 上架了 "+itemLabel(d.item,d.kind));
+ if($("#modal").classList.contains("on")&&$("#modalTitle").textContent.indexOf("交易市場")>=0)renderMarketList();}
+function mktDelRemote(d){MKT=MKT.filter(l=>l.lid!==d.lid);
+ if($("#modal").classList.contains("on")&&$("#modalTitle").textContent.indexOf("交易市場")>=0)renderMarketList();}
+function publishListing(kind,item,price){
+ if(!online()){toast("需要連線才能上架交易市場");return;}
+ if(!(price>0)){toast("請輸入有效價格");return;}
+ // 託管:先從背包移除
+ if(kind==="pearl")S.pearls=S.pearls.filter(p=>p.id!==item.id);
+ else S.products=S.products.filter(p=>p.id!==item.id);
+ const lid=Date.now()+"-"+Math.floor(Math.random()*999);
+ MKT.push({lid:lid,sellerId:String(myId()),sellerName:curName(),kind:kind,item:item,price:Math.round(price),sold:false});
+ socialSend({t:"mkt-add",lid:lid,kind:kind,item:item,price:Math.round(price)});
+ sfx("coin");updateHUD();toast("🏪 已上架:"+itemLabel(item,kind)+" 💰"+fmt(price));
+ renderMarketSell();}
+function unpublish(lid){
+ const l=MKT.find(x=>x.lid===lid);if(!l)return;
+ MKT=MKT.filter(x=>x.lid!==lid);
+ if(l.kind==="pearl")S.pearls.push(l.item);else S.products.push(l.item); // 退回背包
+ socialSend({t:"mkt-del",lid:lid});updateHUD();toast("↩️ 已下架並取回物品");renderMarketList();}
+function requestBuy(lid){
+ const l=MKT.find(x=>x.lid===lid);if(!l)return;
+ if(l.sellerId===String(myId())){toast("這是你自己的商品");return;}
+ if(S.coins<l.price){toast("💰 金幣不足!");sfx("fail");return;}
+ socialSend({t:"mkt-buy",lid:lid});toast("🛒 已向賣家送出購買請求...");}
+function mktBuyReq(buyerId,buyerName,lid){
+ const l=MKT.find(x=>x.lid===lid);
+ if(!l||l.sold||l.sellerId!==String(myId())){
+  if(l&&l.sold)socialSend({t:"mkt-sold",lid:lid,to:buyerId,item:null});return;}
+ l.sold=true;S.coins+=l.price;updateHUD();sfx("coin");
+ toast("🏪 "+buyerName+" 買走了 "+itemLabel(l.item,l.kind)+" +💰"+fmt(l.price),true);
+ socialSend({t:"mkt-sold",lid:lid,to:buyerId,kind:l.kind,item:l.item,price:l.price});
+ socialSend({t:"mkt-del",lid:lid});}
+function mktSold(d){
+ MKT=MKT.filter(l=>l.lid!==d.lid);
+ if(String(d.to)===String(myId())){
+  if(!d.item){toast("😢 手慢了,商品已被買走");sfx("miss");return;}
+  S.coins-=d.price;
+  if(d.kind==="pearl")S.pearls.push(d.item);else S.products.push(d.item);
+  sfx("coin");toast("🛒 購入成功:"+itemLabel(d.item,d.kind)+" -💰"+fmt(d.price),true);}
+ if($("#modal").classList.contains("on")&&$("#modalTitle").textContent.indexOf("交易市場")>=0)renderMarketList();
+ updateHUD();}
+let mktTab="sell";
+function openMarket(){
+ openModal("🏪 交易市場",'<div style="display:flex;gap:8px;margin-bottom:12px">'
+  +'<button class="dockBtn" id="mktTabSell">📤 我要上架</button>'
+  +'<button class="dockBtn" id="mktTabList">🛒 市場商品('+MKT.length+')</button></div><div id="mktBody"></div>');
+ $("#mktTabSell").onclick=()=>{mktTab="sell";renderMarketSell();sfx("click");};
+ $("#mktTabList").onclick=()=>{mktTab="list";renderMarketList();sfx("click");};
+ renderMarketSell();}
+function renderMarketSell(){
+ if(mktTab!=="sell"){renderMarketList();return;}
+ $("#mktTabSell").style.background="#1b8aa6";$("#mktTabList").style.background="rgba(6,34,46,.85)";
+ let h="<p style='font-size:12px;color:#8a7a5e;margin-bottom:8px'>📤 上架後物品由市場託管,賣出自動收款,隨時可下架取回。</p>";
+ const row=(kind,it)=>{const suggest=Math.max(1,Math.round(it.value*1.15));
+  return '<div class="pCard"><div class="pIcon">'+itemIcon(it,kind)+'</div><div class="pMid">'
+   +'<div class="pName">'+itemLabel(it,kind)+'</div><div class="pReq">價值 💰'+fmt(it.value)+'</div></div>'
+   +'<input type="number" id="pr'+it.id+'" value="'+suggest+'" style="width:76px;padding:6px;border:2px solid #e0d3b3;border-radius:8px">'
+   +'<button class="sellBtn" data-pub="'+kind+"|"+it.id+'">上架</button></div>';};
+ if(!S.pearls.length&&!S.products.length)h+="<p style='font-size:13px;color:#8a7a5e'>背包裡沒有可上架的物品</p>";
+ else{S.pearls.forEach(p=>h+=row("pearl",p));S.products.forEach(p=>h+=row("product",p));}
+ const mine=MKT.filter(l=>l.sellerId===String(myId()));
+ h+='<h4 style="margin:12px 0 6px">📦 我的上架中('+mine.length+')</h4>';
+ if(!mine.length)h+="<p style='font-size:12px;color:#8a7a5e'>無</p>";
+ else mine.forEach(l=>{h+='<div class="pCard"><div class="pIcon">'+itemIcon(l.item,l.kind)+'</div><div class="pMid">'
+  +'<div class="pName">'+itemLabel(l.item,l.kind)+'</div><div class="pReq">開價 💰'+fmt(l.price)+(l.sold?" · 已成交":"")+'</div></div>'
+  +'<button class="sellBtn" data-unpub="'+l.lid+'" style="background:linear-gradient(180deg,#e88,#c0392b);box-shadow:0 3px 0 #7a1f14">下架</button></div>';});
+ $("#mktBody").innerHTML=h;
+ $("#mktBody").querySelectorAll("[data-pub]").forEach(b=>b.onclick=()=>{
+  const[kind,id]=b.dataset.pub.split("|");const it=kind==="pearl"?S.pearls.find(p=>p.id===+id):S.products.find(p=>p.id===+id);
+  const price=+($("#pr"+id)||{}).value||it.value;publishListing(kind,it,price);});
+ $("#mktBody").querySelectorAll("[data-unpub]").forEach(b=>b.onclick=()=>unpublish(b.dataset.unpub));}
+function renderMarketList(){
+ if(mktTab!=="list"){renderMarketSell();return;}
+ $("#mktTabList").style.background="#1b8aa6";$("#mktTabSell").style.background="rgba(6,34,46,.85)";
+ let h="<p style='font-size:12px;color:#8a7a5e;margin-bottom:8px'>🛒 即時同步所有在線玩家的上架商品。</p>";
+ if(!MKT.length)h+="<p style='font-size:13px;color:#8a7a5e'>市場上暫無商品,等玩家上架中...</p>";
+ else MKT.forEach(l=>{const mine=l.sellerId===String(myId());
+  h+='<div class="pCard"><div class="pIcon">'+itemIcon(l.item,l.kind)+'</div><div class="pMid">'
+   +'<div class="pName">'+itemLabel(l.item,l.kind)+'</div>'
+   +'<div class="pReq">賣家:'+l.sellerName+(l.sold?" · 已成交":"")+'</div></div>'
+   +(mine?'<button class="sellBtn" data-unpub2="'+l.lid+'" style="background:linear-gradient(180deg,#e88,#c0392b);box-shadow:0 3px 0 #7a1f14">下架</button>'
+    :'<button class="sellBtn" data-buy="'+l.lid+'" '+(l.sold||S.coins<l.price?"disabled":"")+'>購買 💰'+fmt(l.price)+'</button>')+'</div>';});
+ $("#mktBody").innerHTML=h;
+ $("#mktBody").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>requestBuy(b.dataset.buy));
+ $("#mktBody").querySelectorAll("[data-unpub2]").forEach(b=>b.onclick=()=>unpublish(b.dataset.unpub2));}
+$("#stallMarket").onclick=openMarket;
+
+/* ---------- 拜訪別人的海域 ---------- */
+function openPlayerMenu(id,wsFlag,name,display){
+ let h='<div style="text-align:center"><p style="font-size:18px;font-weight:900">🌐 '+name+'</p>';
+ if(display){h+='<div style="margin:12px auto;display:inline-block"><div class="pearlBall" style="'+pearlStyle(display)+';width:56px;height:56px"></div>'
+  +'<p style="font-size:13px;margin-top:6px">🏛️ 鎮店之寶:'+display.pname+'('+display.grade+'級)</p>'
+  +'<p style="font-size:13px;color:#c0392b;font-weight:800">💰 '+fmt(display.value)+'</p></div>';}
+ else h+='<p style="font-size:13px;color:#8a7a5e;margin:10px">對方尚未展示珍珠</p>';
+ h+='</div><div style="display:flex;gap:10px;justify-content:center;margin-top:8px">'
+  +'<button class="bigBtn" id="pmCase" style="margin:0;font-size:14px;padding:10px 22px">🏛️ 參觀展示櫃</button>'
+  +'<button class="bigBtn" id="pmSea" style="margin:0;font-size:14px;padding:10px 22px;background:linear-gradient(180deg,#8fd8ea,#3f9ec2);color:#06303e;box-shadow:0 4px 0 #1b6d8a">🌊 參觀海域</button></div>';
+ openModal("玩家資訊",h);
+ $("#pmCase").onclick=()=>{sfx("click");closeModal();
+  if(wsFlag==="1")WSN.send({t:"visit",target:+id});else visitPlayer(id);};
+ $("#pmSea").onclick=()=>{sfx("click");closeModal();
+  toast("🌊 正在取得 "+name+" 的海域資料...");
+  socialSend({t:"sea-req",target:id});};}
+function seaReply(toId){
+ socialSend({t:"sea-data",to:toId,data:{
+  oysters:S.oysters.map(o=>({i:o.i,j:o.j,rarity:o.rarity,ready:o.ready})),
+  display:myDisplay()}});}
+function seaShow(d){
+ const data=d.data;const n=(data.oysters||[]).length;
+ openModal("🌊 "+(d.name||"玩家")+" 的海域",
+  '<p style="text-align:center;font-size:12px;color:#8a7a5e">養殖了 '+n+' 隻珍珠蚌'+(data.display?" · 鎮店之寶:"+data.display.pname+"("+data.display.grade+"級)":"")+'</p>'
+  +'<canvas id="seaView" width="600" height="330" style="width:100%;border-radius:12px;background:linear-gradient(180deg,#8fd8ea,#2b7d9c)"></canvas>');
+ const c=$("#seaView").getContext("2d");
+ const TW2=64,TH2=32,ox=300,oy=52;
+ c.textAlign="center";c.textBaseline="middle";
+ for(let i=0;i<10;i++)for(let j=0;j<7;j++){const x=ox+(i-j)*TW2/2,y=oy+(i+j)*TH2/2;
+  c.beginPath();c.moveTo(x,y-TH2/2);c.lineTo(x+TW2/2,y);c.lineTo(x,y+TH2/2);c.lineTo(x-TW2/2,y);c.closePath();
+  c.fillStyle=(i+j)%2?"rgba(255,255,255,.16)":"rgba(255,255,255,.09)";c.fill();
+  c.strokeStyle="rgba(255,255,255,.3)";c.lineWidth=1;c.stroke();}
+ (data.oysters||[]).forEach(o=>{const x=ox+(o.i-o.j)*TW2/2,y=oy+(o.i+o.j)*TH2/2;
+  if(o.ready){c.fillStyle="rgba(255,255,200,.4)";c.beginPath();c.arc(x,y-8,18,0,7);c.fill();}
+  c.font="24px serif";c.fillText("🦪",x,y-4);});
+ if(data.display){const p=data.display;
+  c.fillStyle="rgba(6,34,46,.75)";c.beginPath();c.roundRect?c.roundRect(190,286,220,38,10):c.rect(190,286,220,38);c.fill();
+  const g=c.createRadialGradient(215,305,2,215,305,12);g.addColorStop(0,"#fff");g.addColorStop(1,p.color);
+  c.fillStyle=g;c.beginPath();c.arc(215,305,11,0,7);c.fill();
+  c.fillStyle="#fff";c.font="bold 12px sans-serif";c.textAlign="left";
+  c.fillText("🏛️ "+p.pname+" "+p.grade+"級 💰"+fmt(p.value),234,305);}}
+
+/* ---------- 排行榜(點玩家→選單) ---------- */
+renderLeader=function(){
+ const rows=[];
+ Object.entries(WSN.players).forEach(([id,p])=>rows.push({name:p.name,coins:p.coins,real:true,id:id,ws:"1",display:p.display}));
+ Object.entries(NET.players).forEach(([id,p])=>rows.push({name:p.name,coins:p.coins,real:true,id:id,ws:"0",display:p.display}));
+ NPCS.forEach(n=>rows.push({name:n.name,coins:n.coins}));
+ rows.push({name:"你 ⭐",coins:S?S.coins:0,me:true});
+ rows.sort((a,b)=>b.coins-a.coins);
+ const onlineN=WSN.mode?(Object.keys(WSN.players).length+1):(NET.peer?(Object.keys(NET.players).length+1):0);
+ $("#leaderList").innerHTML='<div style="text-align:center;font-size:10px;color:#8fd8ea;margin-bottom:4px">— 在線 '+onlineN+' 人 · 點玩家可拜訪 —</div>'
+  +rows.slice(0,8).map((n,i)=>{
+  const medal=i<3?["🥇","🥈","🥉"][i]:(i+1)+".";
+  const click=n.real?(' data-pid="'+n.id+'" data-ws="'+n.ws+'" data-pname="'+n.name+'" data-pdisp="'+(n.display?encodeURIComponent(JSON.stringify(n.display)):"")+'" style="cursor:pointer"'):(n.display?(' title="展示櫃:'+n.display.pname+"("+n.display.grade+"級)"):"");
+  return '<div class="mRow'+(n.me?" me":"")+'"'+click+'><span>'+medal+" "+n.name+(n.display?" 🏛️":"")+'</span><span>'+fmt(n.coins)+"</span></div>";}).join("");
+ $("#leaderList").querySelectorAll("[data-pid]").forEach(el=>el.onclick=()=>{sfx("click");
+  let disp=null;try{disp=el.dataset.pdisp?JSON.parse(decodeURIComponent(el.dataset.pdisp)):null;}catch(e){}
+  openPlayerMenu(el.dataset.pid,el.dataset.ws,el.dataset.pname,disp);});};
+</script>
+<script>
+"use strict";
+/* ================= 世界模式:人物走動 + 擬真海底 ================= */
+$("#seaCanvas").style.display="none";           // 停用舊點擊式海域
+try{drawSea=function(){};}catch(e){}
+const WC=document.createElement("canvas");WC.id="worldCanvas";
+Object.assign(WC.style,{position:"absolute",inset:"0",width:"100%",height:"100%"});
+$("#game").insertBefore(WC,$("#game").firstChild);
+const WCTX=WC.getContext("2d");
+function wResize(){WC.width=innerWidth;WC.height=innerHeight;}
+addEventListener("resize",wResize);wResize();
+
+/* ---- 玩家角色 ---- */
+const BEACH={w:2000,h:1350};
+const SEA={w:1500,h:950};
+const STALLS=[
+ {id:"shop",x:330,y:330,icon:"🦪",name:"珍珠蚌商店",hue:0},
+ {id:"craft",x:780,y:330,icon:"🔧",name:"加工商店",hue:140},
+ {id:"sell",x:1230,y:330,icon:"💰",name:"販售商店",hue:230},
+ {id:"market",x:1680,y:330,icon:"🏪",name:"交易市場",hue:60}];
+const CASE_POS={x:250,y:660};
+const DIVE_POS={x:1000,y:1180};
+const EXIT_POS={x:750,y:80};
+function plotPos(i,j){return{x:190+i*125,y:210+j*100};}
+const P={x:1000,y:900,sea:false,dir:1,walk:0,moving:false,bob:0};
+const KEYS={};
+addEventListener("keydown",e=>{KEYS[e.key.toLowerCase()]=true;
+ if(e.key.toLowerCase()==="e")tryInteract();});
+addEventListener("keyup",e=>{KEYS[e.key.toLowerCase()]=false;});
+addEventListener("blur",()=>{for(const k in KEYS)KEYS[k]=false;});
+
+/* ---- 其他玩家(位置同步) ---- */
+const REMOTES={};
+function posRecv(id,name,d){REMOTES[id]={x:d.x,y:d.y,sea:!!d.sea,dir:d.dir||1,walk:d.walk||0,name:name||"玩家",ts:Date.now()};}
+setInterval(()=>{if(!S||!online())return;
+ socialSend({t:"pos",x:Math.round(P.x),y:Math.round(P.y),sea:P.sea,dir:P.dir,walk:P.moving?1:0});},180);
+setInterval(()=>{const now=Date.now();
+ Object.entries(REMOTES).forEach(([id,r])=>{if(now-r.ts>6000)delete REMOTES[id];});},3000);
+function hueOf(name){let h=0;for(const c of name)h=(h*31+c.charCodeAt(0))%360;return h;}
+
+/* ---- 角色繪製(Q版) ---- */
+function drawAvatar(c,x,y,o){
+ const walk=o.walk?Math.sin(Date.now()/90)*4:0;
+ c.save();c.translate(x,y);
+ c.fillStyle="rgba(0,0,0,.22)";c.beginPath();c.ellipse(0,2,o.swim?16:13,5,0,0,7);c.fill();
+ if(o.swim){c.rotate(Math.sin(Date.now()/400)*0.12);}
+ // 腳
+ if(!o.swim){c.fillStyle="#3a2c1e";
+  c.beginPath();c.ellipse(-5+walk,0,4,3,0,0,7);c.fill();
+  c.beginPath();c.ellipse(5-walk,0,4,3,0,0,7);c.fill();}
+ // 身體
+ c.fillStyle=o.me?"#2b7d9c":"hsl("+o.hue+",55%,55%)";
+ c.beginPath();c.roundRect?c.roundRect(-10,-26+ (o.swim?4:0),20,20,7):c.rect(-10,-26,20,20);c.fill();
+ // 頭
+ c.fillStyle="#ffdfc4";c.beginPath();c.arc(0,-36+(o.swim?4:0),12,0,7);c.fill();
+ // 頭髮
+ c.fillStyle="hsl("+o.hue+",60%,38%)";
+ c.beginPath();c.arc(0,-39+(o.swim?4:0),12,Math.PI,0);c.fill();
+ c.fillRect(-12,-40+(o.swim?4:0),4,8);c.fillRect(8,-40+(o.swim?4:0),4,8);
+ // 眼睛
+ c.fillStyle="#2b1c10";
+ const ex=o.dir>=0?2:-2;
+ c.beginPath();c.arc(-3+ex,-35+(o.swim?4:0),1.6,0,7);c.fill();
+ c.beginPath();c.arc(4+ex,-35+(o.swim?4:0),1.6,0,7);c.fill();
+ if(o.me){c.font="11px serif";c.textAlign="center";c.fillText("👑",0,-52+(o.swim?4:0));}
+ c.restore();
+ // 名牌
+ c.font="bold 11px sans-serif";c.textAlign="center";
+ c.lineWidth=3;c.strokeStyle="rgba(0,0,0,.6)";c.strokeText(o.name,x,y-56+(o.swim?4:0));
+ c.fillStyle=o.me?"#f5c542":"#fff";c.fillText(o.name,x,y-56+(o.swim?4:0));}
+
+/* ---- 沙灘場景 ---- */
+function drawBeach(cam){
+ const g=WCTX.createLinearGradient(0,0,0,WC.height);
+ g.addColorStop(0,"#ffe9b8");g.addColorStop(.6,"#f5d896");g.addColorStop(1,"#ecc176");
+ WCTX.fillStyle=g;WCTX.fillRect(0,0,WC.width,WC.height);
+ // 沙粒
+ WCTX.fillStyle="rgba(180,140,80,.18)";
+ for(let k=0;k<60;k++){const x=(k*197)%BEACH.w-cam.x,y=(k*331)%BEACH.h-cam.y;
+  if(x>-10&&x<WC.width+10&&y>-10&&y<WC.height+10){WCTX.beginPath();WCTX.arc(x,y,2+(k%3),0,7);WCTX.fill();}}
+ // 木棧道
+ WCTX.save();WCTX.translate(-cam.x,-cam.y);
+ WCTX.fillStyle="#b98a52";WCTX.fillRect(80,400,1840,110);
+ WCTX.strokeStyle="rgba(90,60,30,.5)";WCTX.lineWidth=3;
+ for(let x=80;x<1920;x+=60){WCTX.beginPath();WCTX.moveTo(x,400);WCTX.lineTo(x,510);WCTX.stroke();}
+ WCTX.fillStyle="rgba(0,0,0,.08)";WCTX.fillRect(80,400,1840,12);
+ // 椰子樹
+ [[150,950],[480,1100],[1560,1050],[1850,860],[760,1220]].forEach(([x,y])=>{
+  WCTX.font="64px serif";WCTX.textAlign="center";WCTX.fillText("🌴",x,y);});
+ // 展示櫃
+ drawCase(CASE_POS.x,CASE_POS.y);
+ // 攤位
+ STALLS.forEach(s=>drawStall(s.x,s.y,s));
+ // 潛水區棧橋
+ WCTX.fillStyle="#8a6238";WCTX.fillRect(DIVE_POS.x-90,DIVE_POS.y-40,180,260);
+ WCTX.strokeStyle="rgba(60,40,20,.5)";WCTX.lineWidth=3;
+ for(let y=DIVE_POS.y-40;y<DIVE_POS.y+220;y+=34){WCTX.beginPath();WCTX.moveTo(DIVE_POS.x-90,y);WCTX.lineTo(DIVE_POS.x+90,y);WCTX.stroke();}
+ WCTX.font="44px serif";WCTX.fillText("🤿",DIVE_POS.x,DIVE_POS.y-70);
+ WCTX.font="bold 15px sans-serif";WCTX.fillStyle="#5d3d10";
+ WCTX.fillText("潛水區 · 按 E 潛入你的海域",DIVE_POS.x,DIVE_POS.y+240);
+ // 遠處海面
+ WCTX.fillStyle="rgba(43,125,156,.25)";WCTX.fillRect(0,1360,BEACH.w,90);
+ WCTX.restore();}
+function drawStall(x,y,s){
+ WCTX.save();WCTX.translate(x,y);
+ // 遮陽棚
+ for(let i=0;i<8;i++){WCTX.fillStyle=i%2?"#fff":("hsl("+s.hue+",70%,55%)");
+  WCTX.fillRect(-56+i*14,-78,14,26);}
+ WCTX.fillStyle="#8a5a30";WCTX.fillRect(-60,-52,120,64);
+ WCTX.fillStyle="#a5713d";WCTX.fillRect(-60,-52,120,14);
+ WCTX.fillStyle="#6b4520";WCTX.fillRect(-66,12,132,12);
+ WCTX.font="40px serif";WCTX.textAlign="center";WCTX.fillText(s.icon,0,-16);
+ WCTX.font="bold 14px sans-serif";WCTX.fillStyle="#fff";
+ WCTX.strokeStyle="rgba(0,0,0,.5)";WCTX.lineWidth=3;
+ WCTX.strokeText(s.name,0,44);WCTX.fillText(s.name,0,44);
+ WCTX.restore();}
+function drawCase(x,y){
+ WCTX.save();WCTX.translate(x,y);
+ WCTX.fillStyle="#5d3d22";WCTX.fillRect(-46,-30,92,86);
+ WCTX.fillStyle="#2e1d0e";WCTX.fillRect(-46,-30,92,10);
+ const dp=S?S.pearls.find(p=>p.id===S.displayId):null;
+ if(dp){const g=WCTX.createRadialGradient(0,-2,3,0,4,20);g.addColorStop(0,"#fff");g.addColorStop(1,dp.color);
+  WCTX.fillStyle=g;WCTX.beginPath();WCTX.arc(0,4,17,0,7);WCTX.fill();
+  WCTX.fillStyle="rgba(255,255,255,.85)";WCTX.beginPath();WCTX.arc(-5,0,4,0,7);WCTX.fill();}
+ else{WCTX.font="26px serif";WCTX.textAlign="center";WCTX.fillText("❔",0,10);}
+ WCTX.font="bold 12px sans-serif";WCTX.textAlign="center";WCTX.fillStyle="#5d3d10";
+ WCTX.fillText("🏛️ 展示櫃 · 按 E",0,74);WCTX.restore();}
+
+/* ---- 擬真海底 ---- */
+const BUBBLES=[],PLANK=[];
+for(let i=0;i<40;i++)BUBBLES.push({x:Math.random()*SEA.w,y:Math.random()*SEA.h,r:1+Math.random()*3,s:0.3+Math.random()});
+for(let i=0;i<70;i++)PLANK.push({x:Math.random()*SEA.w,y:Math.random()*SEA.h,s:0.2+Math.random()*0.5});
+function drawSeaWorld(cam,t){
+ const g=WCTX.createLinearGradient(0,0,0,WC.height);
+ g.addColorStop(0,"#0e5f80");g.addColorStop(.5,"#083d58");g.addColorStop(1,"#041f2e");
+ WCTX.fillStyle=g;WCTX.fillRect(0,0,WC.width,WC.height);
+ // 體積光束
+ WCTX.save();WCTX.globalCompositeOperation="lighter";
+ for(let k=0;k<6;k++){const bx=((k*380+Math.sin(t/3000+k)*60)-cam.x*0.9)% (WC.width+400)-200;
+  const bg=WCTX.createLinearGradient(bx,0,bx+140,WC.height);
+  bg.addColorStop(0,"rgba(140,220,255,.14)");bg.addColorStop(1,"rgba(140,220,255,0)");
+  WCTX.fillStyle=bg;WCTX.beginPath();
+  WCTX.moveTo(bx,-20);WCTX.lineTo(bx+90,-20);WCTX.lineTo(bx+260,WC.height);WCTX.lineTo(bx+40,WC.height);WCTX.closePath();WCTX.fill();}
+ WCTX.restore();
+ WCTX.save();WCTX.translate(-cam.x,-cam.y);
+ // 海底沙地
+ WCTX.fillStyle="#c9b078";WCTX.beginPath();WCTX.moveTo(-100,SEA.h-160);
+ WCTX.quadraticCurveTo(SEA.w/2,SEA.h-220,SEA.w+100,SEA.h-150);WCTX.lineTo(SEA.w+100,SEA.h+300);WCTX.lineTo(-100,SEA.h+300);WCTX.fill();
+ // 海草
+ for(let k=0;k<14;k++){const hx=120+k*105,hy=SEA.h-150+((k*53)%50);
+  WCTX.strokeStyle="hsl(150,60%,"+(28+(k%3)*8)+"%)";WCTX.lineWidth=6;WCTX.lineCap="round";
+  WCTX.beginPath();WCTX.moveTo(hx,hy);
+  WCTX.quadraticCurveTo(hx+Math.sin(t/700+k)*22,hy-46,hx+Math.sin(t/700+k)*34,hy-88);WCTX.stroke();}
+ // 珊瑚與石頭
+ WCTX.font="34px serif";WCTX.textAlign="center";
+ [[180,SEA.h-140,"🪸"],[640,SEA.h-120,"🪨"],[1100,SEA.h-150,"🪸"],[1380,SEA.h-110,"🐚"]].forEach(([x,y,e])=>WCTX.fillText(e,x,y));
+ // 浮游微粒
+ PLANK.forEach(p=>{const px=(p.x+Math.sin(t/2000+p.y)*20),py=(p.y-t/60*p.s)%SEA.h;
+  WCTX.fillStyle="rgba(200,240,255,.35)";WCTX.beginPath();WCTX.arc(px,py,1.4,0,7);WCTX.fill();});
+ // 上浮氣泡
+ BUBBLES.forEach(b=>{b.y-=b.s;if(b.y<-10){b.y=SEA.h;b.x=Math.random()*SEA.w;}
+  WCTX.strokeStyle="rgba(200,240,255,.5)";WCTX.lineWidth=1.2;
+  WCTX.beginPath();WCTX.arc(b.x+Math.sin(t/300+b.x)*6,b.y,b.r,0,7);WCTX.stroke();});
+ // 浮球出口
+ WCTX.font="42px serif";WCTX.fillText("🛟",EXIT_POS.x,EXIT_POS.y);
+ WCTX.font="bold 14px sans-serif";WCTX.fillStyle="#bfeaf5";
+ WCTX.fillText("浮球 · 按 E 浮出水面",EXIT_POS.x,EXIT_POS.y+42);
+ // 蚌田
+ for(let i=0;i<10;i++)for(let j=0;j<7;j++){const{x,y}=plotPos(i,j);
+  const occ=S&&S.oysters.some(o=>o.i===i&&o.j===j);
+  WCTX.beginPath();WCTX.ellipse(x,y+6,44,20,0,0,7);
+  WCTX.fillStyle=occ?"rgba(120,95,55,.5)":"rgba(255,255,255,.10)";WCTX.fill();
+  WCTX.strokeStyle="rgba(255,255,255,.28)";WCTX.lineWidth=1.5;WCTX.stroke();}
+ // 珍珠蚌
+ if(S)S.oysters.forEach(o=>{const{x,y}=plotPos(o.i,o.j);const r=RARITIES[o.rarity];
+  if(o.ready){WCTX.fillStyle="rgba(255,255,180,"+(0.22+0.18*Math.sin(t/300+o.id))+")";
+   WCTX.beginPath();WCTX.arc(x,y-8,30,0,7);WCTX.fill();}
+  WCTX.font="30px serif";WCTX.fillText("🦪",x,y-6+Math.sin(t/500+o.id)*2.5);
+  WCTX.strokeStyle=r.colors[0];WCTX.lineWidth=2;WCTX.globalAlpha=.8;
+  WCTX.beginPath();WCTX.ellipse(x,y+8,26,10,0,0,7);WCTX.stroke();WCTX.globalAlpha=1;
+  if(!o.ready){const p=Math.min(1,(Date.now()-o.born)/o.matTime);
+   WCTX.strokeStyle="rgba(0,0,0,.4)";WCTX.lineWidth=4;WCTX.beginPath();WCTX.arc(x,y-34,9,0,7);WCTX.stroke();
+   WCTX.strokeStyle="#f5c542";WCTX.beginPath();WCTX.arc(x,y-34,9,-Math.PI/2,-Math.PI/2+p*Math.PI*2);WCTX.stroke();}});
+ WCTX.restore();
+ // 水面反光+深色遮罩(深度感)
+ WCTX.fillStyle="rgba(4,31,46,.14)";WCTX.fillRect(0,0,WC.width,WC.height);}
+
+/* ---- 互動提示 ---- */
+const PROMPT=document.createElement("div");
+Object.assign(PROMPT.style,{position:"fixed",bottom:"70px",left:"50%",transform:"translateX(-50%)",
+ background:"rgba(6,34,46,.9)",color:"#fff",borderRadius:"24px",padding:"8px 22px",
+ fontWeight:"800",fontSize:"14px",zIndex:"26",display:"none",border:"1px solid rgba(255,255,255,.3)",
+ boxShadow:"0 8px 20px rgba(0,0,0,.4)"});
+document.body.appendChild(PROMPT);
+let CUR_ACT=null;
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function findInteract(){
+ if(!P.sea){
+  for(const s of STALLS)if(dist(P,s)<95)return{label:"按 E 開啟「"+s.name+"」",act:{shop:openShop,craft:openCraft,sell:openSell,market:openMarket}[s.id]};
+  if(dist(P,CASE_POS)<90)return{label:"按 E 查看展示櫃",act:()=>$("#displayCase").onclick()};
+  if(dist(P,DIVE_POS)<110)return{label:"🤿 按 E 潛入你的海底海域",act:()=>{P.sea=true;P.x=750;P.y=200;sfx("splash");toast("🌊 潛入海底!WASD 游動,靠近蚌田按 E");}};
+ }else{
+  if(dist(P,EXIT_POS)<90)return{label:"🛟 按 E 浮出水面",act:()=>{P.sea=false;P.x=DIVE_POS.x;P.y=DIVE_POS.y-80;sfx("splash");}};
+  if(S){let best=null,bd=1e9;
+   S.oysters.forEach(o=>{const p=plotPos(o.i,o.j);const d=dist(P,p);if(d<85&&d<bd){bd=d;best=o;}});
+   if(best)return best.ready?{label:"🔨 按 E 敲開這隻"+RARITIES[best.rarity].name,act:()=>startCrack(best)}
+    :{label:"🦪 成長中 "+Math.round(Math.min(1,(Date.now()-best.born)/best.matTime)*100)+"%",act:null};
+   if(S.placedPending!==null){let bi=-1,bj=-1,bd2=1e9;
+    for(let i=0;i<10;i++)for(let j=0;j<7;j++){if(S.oysters.some(o=>o.i===i&&o.j===j))continue;
+     const p=plotPos(i,j);const d=dist(P,p);if(d<85&&d<bd2){bd2=d;bi=i;bj=j;}}
+    if(bi>=0)return{label:"📍 按 E 在此放置「"+S.placedPending.name+"」",act:()=>placeOyster(bi,bj)};}}
+ }
+ return null;}
+function tryInteract(){if(CUR_ACT&&CUR_ACT.act){sfx("click");CUR_ACT.act();}}
+
+/* ---- 主迴圈 ---- */
+function worldLoop(t){
+ if($("#game").classList.contains("on")){
+  // 移動
+  let dx=0,dy=0;
+  if(KEYS["w"]||KEYS["arrowup"])dy--;if(KEYS["s"]||KEYS["arrowdown"])dy++;
+  if(KEYS["a"]||KEYS["arrowleft"])dx--;if(KEYS["d"]||KEYS["arrowright"])dx++;
+  P.moving=!!(dx||dy);
+  if(P.moving){const len=Math.hypot(dx,dy);const spd=P.sea?3.4:4.2;
+   P.x+=dx/len*spd;P.y+=dy/len*spd;if(dx)P.dir=dx>0?1:-1;P.walk+=0.2;
+   const W=P.sea?SEA:BEACH;
+   P.x=Math.max(40,Math.min(W.w-40,P.x));P.y=Math.max(60,Math.min(W.h-60,P.y));}
+  const cam={x:P.x-WC.width/2,y:P.y-WC.height/2};
+  cam.x=Math.max(0,Math.min((P.sea?SEA.w:BEACH.w)-WC.width,cam.x));
+  cam.y=Math.max(0,Math.min((P.sea?SEA.h:BEACH.h)-WC.height,cam.y));
+  if(P.sea)drawSeaWorld(cam,t);else drawBeach(cam);
+  // 其他玩家
+  Object.values(REMOTES).forEach(r=>{if(r.sea===P.sea)
+   drawAvatar(WCTX,r.x-cam.x,r.y-cam.y,{name:r.name,hue:hueOf(r.name),dir:r.dir,walk:r.walk,me:false,swim:P.sea});});
+  // 自己
+  drawAvatar(WCTX,P.x-cam.x,P.y-cam.y+(P.sea?Math.sin(t/350)*3:0),
+   {name:curName(),hue:45,dir:P.dir,walk:P.moving?1:0,me:true,swim:P.sea});
+  // 互動提示
+  const it=findInteract();CUR_ACT=it;
+  if(it){PROMPT.textContent=it.label;PROMPT.style.display="block";}
+  else PROMPT.style.display="none";}
+ requestAnimationFrame(worldLoop);}
+requestAnimationFrame(worldLoop);
+// 手機虛擬搖桿
+const JOY={on:false,id:null,sx:0,sy:0};
+WC.addEventListener("touchstart",e=>{const t0=e.changedTouches[0];JOY.on=true;JOY.id=t0.identifier;JOY.sx=t0.clientX;JOY.sy=t0.clientY;});
+WC.addEventListener("touchmove",e=>{for(const t0 of e.changedTouches){if(t0.identifier!==JOY.id)continue;
+ const dx=t0.clientX-JOY.sx,dy=t0.clientY-JOY.sy;
+ KEYS["w"]=dy<-25;KEYS["s"]=dy>25;KEYS["a"]=dx<-25;KEYS["d"]=dx>25;}});
+WC.addEventListener("touchend",e=>{for(const t0 of e.changedTouches){if(t0.identifier!==JOY.id)continue;
+ JOY.on=false;KEYS["w"]=KEYS["s"]=KEYS["a"]=KEYS["d"]=false;}});
+WC.addEventListener("dblclick",()=>tryInteract());
+</script>
+</body>
+</html>
