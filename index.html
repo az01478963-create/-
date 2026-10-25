@@ -352,7 +352,7 @@ function makePearl(rarity,damaged){
  const g=gradeOf(score);
  let color=r.colors[0],color2=r.colors[1];
  if(rarity===7){const h=Math.floor(Math.random()*360);color="hsl("+h+",80%,72%)";color2="hsl("+((h+60)%360)+",85%,80%)";}
- let value=r.base*(0.35+score/100)*g.mult*(damaged?0.3:1);
+ let value=r.base*(0.9+score/90)*g.mult*(damaged?0.3:1)*1.4;
  value=Math.max(5,Math.round(value));
  return{id:S.uid++,rarity,luster,shape,size,score:Math.round(score),grade:g.name,gradeColor:g.color,color,color2,value,damaged:!!damaged,
   pname:(damaged?"受損的":"")+r.name.replace("蚌","")+"珍珠"};}
@@ -506,34 +506,37 @@ let CK=null; // {oyster,points[{x,y,hit}],hits,miss,hints,pearl,damaged}
 function startCrack(o){
  CK={oyster:o,points:[],hits:0,miss:0,hints:3,pearl:null,damaged:false};
  $("#crackModal").classList.add("on");
- const area=$("#shellArea");area.querySelectorAll(".hitMark,.hintRing,.bump").forEach(e=>e.remove());
+ const area=$("#shellArea");area.querySelectorAll(".hitMark,.hintRing,.bump,.ripple").forEach(e=>e.remove());
  $("#shellTop").classList.remove("open");$("#crackPearl").className="";$("#crackPearl").style.cssText="";
  $("#revealPanel").className="";$("#revealPanel").innerHTML="";$("#crackClose").style.display="none";
  $("#hitCount").textContent="0";$("#missCount").textContent="0";$("#hintLeft").textContent="3";
- $("#crackMsg").textContent="找出蚌殼上的 3 個敲擊點！";
- // 隨機 3 個敲擊點(避開太近)
+ $("#crackMsg").textContent="🎯 隨便敲敲看!依「太遠/接近」提示找出 3 個敲擊點";
  const W=area.clientWidth||440,H=area.clientHeight||380;
  while(CK.points.length<3){const x=W*(0.24+Math.random()*0.52),y=H*(0.42+Math.random()*0.34);
   if(CK.points.every(p=>Math.hypot(p.x-x,p.y-y)>70))CK.points.push({x,y,hit:false});}
- // 畫出凸起小點(視覺提示)
- CK.points.forEach(p=>{const d=document.createElement("div");
-  d.style.cssText="position:absolute;left:"+p.x+"px;top:"+p.y+"px;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c9a98c,#8a6a52);box-shadow:0 2px 3px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.5);z-index:4;";
-  d.className="bump";area.appendChild(d);p.el=d;});
  sfx("click");}
+function tapRipple(x,y,color,txt){
+ const area=$("#shellArea");
+ const r=document.createElement("div");
+ r.style.cssText="position:absolute;left:"+x+"px;top:"+y+"px;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:"+color+";display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;text-shadow:0 1px 2px #000;z-index:5;pointer-events:none;box-shadow:0 0 16px "+color+";animation:hitPop .35s";
+ r.textContent=txt;area.appendChild(r);setTimeout(()=>r.remove(),650);}
 $("#shellArea").addEventListener("click",e=>{
  if(!CK||CK.pearl)return;
  if(e.target.closest("#crackUI")||e.target.closest("#revealPanel"))return;
  const area=$("#shellArea"),r=area.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
- const p=CK.points.find(p=>!p.hit&&Math.hypot(p.x-mx,p.y-my)<=30);
- if(p){p.hit=true;CK.hits++;sfx("knock");p.el.style.background="radial-gradient(circle at 35% 30%,#fff,#f5c542)";
-  const m=document.createElement("div");m.className="hitMark";m.style.left=p.x+"px";m.style.top=p.y+"px";m.textContent="✓";
-  area.appendChild(m);$("#hitCount").textContent=CK.hits;
-  if(CK.hits>=3){sfx("crackok");setTimeout(()=>openShell(false),350);}
-  else $("#crackMsg").textContent="命中！還剩 "+(3-CK.hits)+" 個敲擊點";}
- else{CK.miss++;$("#missCount").textContent=CK.miss;sfx("miss");
-  const sh=$("#crackSheet");sh.classList.remove("shake");void sh.offsetWidth;sh.classList.add("shake");
-  if(CK.miss>15){$("#crackMsg").textContent="💥 敲壞了…珍珠受損了！";sfx("fail");setTimeout(()=>openShell(true),600);}
-  else $("#crackMsg").textContent="敲錯了！("+CK.miss+"/15) 仔細看蚌殼上的凸起點";}});
+ const p=CK.points.find(p=>!p.hit&&Math.hypot(p.x-mx,p.y-my)<=34);
+ if(p){p.hit=true;CK.hits++;sfx("knock");tapRipple(mx,my,"rgba(255,215,80,.95)","✓敲到");
+  $("#hitCount").textContent=CK.hits;
+  if(CK.hits>=3){sfx("crackok");$("#crackMsg").textContent="🎉 三點全中!蚌殼裂開了…";setTimeout(()=>openShell(false),350);}
+  else $("#crackMsg").textContent="敲到了!還剩 "+(3-CK.hits)+" 個敲擊點";}
+ else{const near=CK.points.filter(pp=>!pp.hit).some(pp=>Math.hypot(pp.x-mx,pp.y-my)<=95);
+  if(near){sfx("step");tapRipple(mx,my,"rgba(255,150,60,.92)","接近!");
+   $("#crackMsg").textContent="接近了!再往熱點靠近一點點…";}
+  else{CK.miss++;$("#missCount").textContent=CK.miss;sfx("miss");
+   tapRipple(mx,my,"rgba(230,70,60,.92)","太遠");
+   const sh=$("#crackSheet");sh.classList.remove("shake");void sh.offsetWidth;sh.classList.add("shake");
+   if(CK.miss>15){$("#crackMsg").textContent="💥 敲壞了…珍珠受損了!";sfx("fail");setTimeout(()=>openShell(true),600);}
+   else $("#crackMsg").textContent="敲太遠了…("+CK.miss+"/15) 跟著冷熱提示找";}}});
 $("#hintBtn").onclick=()=>{
  if(!CK||CK.pearl)return;
  if(CK.hints<=0){toast("提示用完了！");return;}
@@ -632,13 +635,23 @@ function openSell(){
   +'<button class="dockBtn" id="tabNormal" style="background:#1b8aa6">一般販售</button>'
   +'<button class="dockBtn" id="tabOrder">訂單(訂製獎勵)</button></div><div id="sellBody"></div>';
  openModal("💰 販售商店",html);
- const showNormal=()=>{let h="";
-  if(!S.products.length)h="<p style='color:#8a7a5e;font-size:13px'>還沒有加工成品，先去加工商店吧！</p>";
-  else{S.products.forEach(pr=>{h+='<div class="pCard"><div class="pIcon">'+pr.icon+'</div><div class="pMid">'
+ const showNormal=()=>{
+  let h='<p style="font-size:12px;color:#8a7a5e;margin-bottom:6px">💎 珍珠可直接賣出,或加工成更高價的產品!</p>';
+  if(S.pearls.length){S.pearls.forEach(p=>{h+='<div class="pCard"><div class="pIcon"><span class="pearlBall" style="'+pearlStyle(p)+';display:inline-block;width:36px;height:36px"></span></div><div class="pMid">'
+   +'<div class="pName">'+p.pname+' <span class="gBadge" style="background:'+p.gradeColor+'">'+p.grade+'</span></div>'
+   +'<div class="pReq">珠光'+p.luster+' · 形狀'+p.shape+' · '+p.size+'mm'+(p.damaged?' · ⚠️受損':'')+'</div></div>'
+   +'<button class="sellBtn" data-psell="'+p.id+'">賣出 💰'+fmt(p.value)+'</button></div>';});}
+  else h+="<p style='color:#8a7a5e;font-size:13px'>背包沒有珍珠,先去敲蚌吧!</p>";
+  if(S.products.length){h+='<h4 style="margin:10px 0 6px">🎁 加工成品</h4>';
+   S.products.forEach(pr=>{h+='<div class="pCard"><div class="pIcon">'+pr.icon+'</div><div class="pMid">'
    +'<div class="pName">'+pr.name+' <span class="gBadge" style="background:'+pr.gradeColor+'">'+pr.grade+'</span></div>'
    +'<div class="pReq">價值 💰 '+fmt(pr.value)+'</div></div>'
    +'<button class="sellBtn" data-sell="'+pr.id+'">賣出 💰'+fmt(pr.value)+'</button></div>';});}
   $("#sellBody").innerHTML=h;
+  $("#sellBody").querySelectorAll("[data-psell]").forEach(b=>b.onclick=()=>{
+   const p=S.pearls.find(x=>x.id===+b.dataset.psell);if(!p)return;
+   S.coins+=p.value;S.pearls=S.pearls.filter(x=>x.id!==p.id);sfx("coin");
+   toast("💰 賣出 "+p.pname+" +"+fmt(p.value),true);showNormal();updateHUD();});
   $("#sellBody").querySelectorAll("[data-sell]").forEach(b=>b.onclick=()=>{
    const pr=S.products.find(x=>x.id===+b.dataset.sell);S.coins+=pr.value;
    S.products=S.products.filter(x=>x.id!==pr.id);S.stats.sold++;sfx("coin");
