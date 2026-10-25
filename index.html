@@ -707,7 +707,13 @@ document.addEventListener("click",e=>{const mp=$("#menuPanel");
 $("#musicBtn").onclick=()=>{if(!S)return;S.music=!S.music;$("#musicBtn").textContent=S.music?"🎵":"🔇";sfx("click");};
 $("#startBtn").onclick=()=>{
  initAudio();sfx("done");
- S=load()||newState();if(!S.invOysters)S.invOysters=[];genOrders();S.oysters.forEach(scheduleMaturity);
+ S=load()||newState();
+ if(!S.invOysters)S.invOysters=[];
+ if(S.placedPending){const pi=RARITIES.findIndex(x=>x.name===S.placedPending.name);
+  S.invOysters.push({rarity:pi<0?0:pi});S.placedPending=null;
+  toast("🎒 你之前買的蚌已轉入背包!");}
+ S.oysters.forEach(o=>{if(typeof o.rarity!=="number"||!RARITIES[o.rarity])o.rarity=0;});
+ genOrders();S.oysters.forEach(scheduleMaturity);
  $("#startScreen").classList.add("hide");
  $("#game").classList.add("on");
  $("#musicBtn").textContent=S.music?"🎵":"🔇";
@@ -1160,6 +1166,7 @@ const STALLS=[{x:330,y:330,icon:"🦪",name:"珍珠蚌商店",fn:"openShop"},{x:
 const PIER={x:1000,y:1180},CASE_POS={x:770,y:1150},EXIT_POS={x:750,y:90};
 const FARM={x1:150,y1:280,x2:1350,y2:830};
 const MAT_MIN=[2,3,5,10,20,35,55,120];
+window.MAT_MIN=MAT_MIN;
 const SPAWN_W=[100,70,45,28,16,9,5,3];
 const P={x:1000,y:880,sea:false,dir:1,moving:false};
 const REMOTES={};
