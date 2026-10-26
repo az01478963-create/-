@@ -1705,30 +1705,26 @@ caustic.rotation.x=-Math.PI/2;caustic.position.y=0.32;sc.add(caustic);sc.userDat
 /* 程序化寫實 3D 人物(男孩眼鏡/女孩長髮) */
 function faceTexture(isGirl){
  const cv=document.createElement("canvas");cv.width=256;cv.height=256;const c=cv.getContext("2d");
- const g=c.createRadialGradient(100,90,20,128,128,150);
- g.addColorStop(0,"#ffe3c2");g.addColorStop(1,"#f5c193");
- c.fillStyle=g;c.fillRect(0,0,256,256);
- const ex=42;
+ const ex=46;
  for(const sx of [128-ex,128+ex]){
-  c.fillStyle="#fff";c.beginPath();c.ellipse(sx,128,19,23,0,0,7);c.fill();
-  c.fillStyle="#5a3a20";c.beginPath();c.arc(sx,130,13,0,7);c.fill();
-  c.fillStyle="#1c0f06";c.beginPath();c.arc(sx,130,6,0,7);c.fill();
-  c.fillStyle="#fff";c.beginPath();c.arc(sx-4,125,3.8,0,7);c.fill();
+  c.fillStyle="#fff";c.beginPath();c.ellipse(sx,118,22,26,0,0,7);c.fill();
+  c.fillStyle="#5a3a20";c.beginPath();c.arc(sx,120,15,0,7);c.fill();
+  c.fillStyle="#1c0f06";c.beginPath();c.arc(sx,120,7,0,7);c.fill();
+  c.fillStyle="#fff";c.beginPath();c.arc(sx-5,114,4.4,0,7);c.fill();
   c.strokeStyle="#241a12";c.lineWidth=4.5;c.lineCap="round";
   const ln=isGirl?3:2;
   for(let k=-2;k<=2;k++){if(Math.abs(k)>ln)continue;
-   c.beginPath();c.moveTo(sx+k*9,102);
-   c.quadraticCurveTo(sx+k*12,93,sx+k*9,84-Math.abs(k)*2);
-   c.stroke();}
+   c.beginPath();c.moveTo(sx+k*10,92);
+   c.quadraticCurveTo(sx+k*13,83,sx+k*10,76-Math.abs(k)*2);c.stroke();}
   c.strokeStyle="#4a3520";c.lineWidth=5;
-  c.beginPath();c.moveTo(sx-17,86);c.quadraticCurveTo(sx,78,sx+17,86);c.stroke();}
- c.fillStyle="rgba(255,130,150,.35)";
- c.beginPath();c.ellipse(128-ex-20,156,11,6,0,0,7);c.fill();
- c.beginPath();c.ellipse(128+ex+20,156,11,6,0,0,7);c.fill();
- c.fillStyle="rgba(216,154,106,.5)";
- c.beginPath();c.ellipse(128,150,4,2.6,0,0,7);c.fill();
+  c.beginPath();c.moveTo(sx-20,74);c.quadraticCurveTo(sx,66,sx+20,74);c.stroke();}
+ c.fillStyle="rgba(255,130,150,.4)";
+ c.beginPath();c.ellipse(128-ex-22,146,13,7,0,0,7);c.fill();
+ c.beginPath();c.ellipse(128+ex+22,146,13,7,0,0,7);c.fill();
+ c.fillStyle="rgba(216,154,106,.55)";
+ c.beginPath();c.ellipse(128,138,4.5,3,0,0,7);c.fill();
  c.strokeStyle="#d06070";c.lineWidth=4.5;c.lineCap="round";
- c.beginPath();c.moveTo(117,174);c.quadraticCurveTo(128,180,139,174);c.stroke();
+ c.beginPath();c.moveTo(114,162);c.quadraticCurveTo(128,169,142,162);c.stroke();
  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;return t;}
 function buildHumanoid(gender){
  const girl=gender==="girl";
@@ -1755,9 +1751,11 @@ function buildHumanoid(gender){
   const sl=new THREE.Mesh(new THREE.CapsuleGeometry(0.085,0.12,4,10),shirt);
   sl.position.y=-0.05;sh2.add(sl);
   g.add(sh2);parts["arm"+(s<0?"L":"R")]=sh2;}
- const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,24,24),
-  new THREE.MeshLambertMaterial({map:faceTexture(girl)}));
+ const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,24,24),M(0xffd9b0));
  head.position.y=1.6;g.add(head);parts.head=head;
+ const face=new THREE.Mesh(new THREE.PlaneGeometry(0.44,0.44),
+  new THREE.MeshBasicMaterial({map:faceTexture(girl),transparent:true}));
+ face.position.set(0,1.6,0.296);g.add(face);
  const hair=new THREE.Mesh(new THREE.SphereGeometry(0.315,20,20,0,Math.PI*2,0,Math.PI*0.55),hairM);
  hair.position.set(0,1.63,-0.03);g.add(hair);
  const bangs=new THREE.Mesh(new THREE.SphereGeometry(0.3,16,12,0,Math.PI*2,0,Math.PI*0.35),M(0x2e2218));
@@ -1770,9 +1768,9 @@ function buildHumanoid(gender){
  }else{
   const gm=new THREE.MeshBasicMaterial({color:0x222228});
   for(const s of [-1,1]){const lens=new THREE.Mesh(new THREE.TorusGeometry(0.085,0.012,8,20),gm);
-   lens.position.set(0.115*s,1.61,0.27);g.add(lens);}
+   lens.position.set(0.115*s,1.61,0.31);g.add(lens);}
   const bridge=new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.07,6),gm);
-  bridge.rotation.z=Math.PI/2;bridge.position.set(0,1.61,0.28);g.add(bridge);
+  bridge.rotation.z=Math.PI/2;bridge.position.set(0,1.61,0.315);g.add(bridge);
  }
  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;}});
  g.userData.parts=parts;
