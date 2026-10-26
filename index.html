@@ -1560,7 +1560,7 @@ const P={x:1000,y:880,sea:false,dir:1,moving:false};
 const REMOTES={};
 let CUR_ACT=null;
 
-const renderer=new THREE.WebGLRenderer({antialias:true});
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled=true;
@@ -1977,7 +1977,7 @@ function groundY(wx,wz){
 /* 主迴圈 */
 const clockV=new THREE.Clock();
 let camYaw=0,camPitch=0.62,camDist=12.5;
-function loop(){
+function loop(t){
  requestAnimationFrame(loop);
  try{
  if(!$("#game").classList.contains("on"))return;
@@ -2056,12 +2056,17 @@ function loop(){
  if(window.__setDbg){const hasS=typeof S!=="undefined"&&S;
   window.__setDbg("背包蚌:"+(hasS&&S.invOysters?S.invOysters.length:"?")+" 已種:"+(hasS?S.oysters.length:"?")+" 田內:"+(inFarm(P.x,P.y)?"是":"否")+" 座標:"+Math.round(P.x)+","+Math.round(P.y));}
  renderer.render(curScene,camera);
- }catch(err){}
+ }catch(err){window.__loopErr=String(err&&err.stack||err);}
 }
 beachScene=buildBeach();seaScene=buildSea();
 curScene=beachScene;switchSea(false);
 loop();
 window.__world3dOK=true;
+window.__dbg=function(){return {P:{x:Math.round(P.x),y:Math.round(P.y),sea:P.sea},
+ cam:camera.position.toArray().map(v=>Math.round(v*10)/10),
+ scene:curScene===beachScene?"beach":"sea",
+ avatar:avatar?avatar.position.toArray().map(v=>Math.round(v*10)/10):null,
+ camYaw:Math.round(camYaw*100)/100,camPitch:Math.round(camPitch*100)/100};};
 </script>
 </body>
 </html>
