@@ -469,6 +469,7 @@ function oysterArt(i,S){
   c.globalAlpha=1;}
  c.globalAlpha=0.85;c.strokeStyle=ink;c.lineWidth=2.6;c.lineJoin="round";path(1);c.stroke();c.globalAlpha=1;
  return cv;}
+const OYSTER_ART_CACHE={};
 function oysterArtURL(i){return OYSTER_ART_CACHE[i]||(OYSTER_ART_CACHE[i]=oysterArt(i).toDataURL());}
 
 const pearlCache={};
@@ -619,7 +620,7 @@ function openShop(){
  $("#modalBody").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>buyOyster(RARITIES[+b.dataset.buy]));}
 
 /* ================= HUD ================= */
-function updateHUD(){$("#coinVal").textContent=fmt(S.coins);$("#dayVal").textContent=S.day;
+function updateHUD(){$("#coinVal").textContent=fmt(S.coins);const dv2=$("#dayVal");if(dv2)dv2.textContent=S.day;
  $("#oysterCount").textContent=S.oysters.length+(S.invOysters?S.invOysters.length:0);
  // 展示櫃
  const dp=S.pearls.find(p=>p.id===S.displayId);
@@ -1784,6 +1785,7 @@ function makeAvatar(name,me,g,done){
  if(me){const cr=emojiSprite("👑",0.9);cr.position.y=2.55;grp.add(cr);}
  grp.userData={parts:body.userData.parts,mdl:grp};
  done(grp);}
+let avatar=null,hintSpr=null,lastHint="";
 makeAvatar(window.curName?curName():"我",true,(typeof S!=="undefined"&&S&&S.gender)||"boy",g=>{avatar=g;
  hintSpr=textSprite("···","#ffe9a8");hintSpr.scale.set(8,1.5,1);hintSpr.position.y=4.1;g.add(hintSpr);
  if(curScene)curScene.add(g);});
