@@ -1878,7 +1878,7 @@ window.findInteract=function(){
    const slot=remotePierSlot(pi++);
    const wpx=slot[0],wpz=Z2T(550);
    if(Math.hypot(W2T(P.x)-wpx,Z2T(P.y)-wpz)<13)
-    return{label:"🚪 進入 "+pp.name+" 的海域",act:()=>window.startVisit(pid,pp.name)};}}
+    return{label:"🚪 進入 "+pp.name+" 的海域",act:()=>window.startVisit(pid,pp.name)};}
   for(const s of STALLS)if(dist2(P,s)<130)return{label:s.icon+" 進入"+s.name,act:()=>window[s.fn]()};
   if(dist2(P,CASE_POS)<110)return{label:"🏛️ 展示櫃",act:()=>$("#displayCase").onclick()};
   if(dist2(P,PIER)<130)return{label:"🤿 潛入你的海域",act:()=>switchSea(true)};
