@@ -290,6 +290,19 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 
 <script>
 "use strict";
+/* 錯誤顯示器:出錯時直接顯示在畫面上 */
+window.__errBox=function(msg){
+ let b=document.getElementById("__errBox");
+ if(!b){b=document.createElement("div");b.id="__errBox";
+  b.style.cssText="position:fixed;left:10px;bottom:120px;z-index:999;background:rgba(120,20,20,.92);color:#fff;font-size:12px;padding:10px 14px;border-radius:10px;max-width:80vw;word-break:break-all;";
+  document.body.appendChild(b);}
+ b.textContent="⚠ "+msg;};
+window.addEventListener("error",e=>{window.__errBox((e.message||"錯誤")+" @ "+String(e.filename||"").split("/").pop()+":"+e.lineno);});
+window.addEventListener("unhandledrejection",e=>{window.__errBox("Promise: "+(e.reason&&(e.reason.message||e.reason)));});
+setTimeout(()=>{
+ if(!window.__world3dOK)window.__errBox("3D 引擎未啟動：可能是 three.js CDN 被網路阻擋,請換網路或稍後重試");
+},7000);
+
 /* 防止瀏覽器頁面縮放(雙指/點太快),不影響遊戲內相機縮放 */
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
@@ -2046,6 +2059,7 @@ function loop(){
 beachScene=buildBeach();seaScene=buildSea();
 curScene=beachScene;switchSea(false);
 loop();
+window.__world3dOK=true;
 </script>
 </body>
 </html>
