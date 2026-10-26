@@ -1912,7 +1912,9 @@ window.plantPicker=function(x,y){
 /* 場景切換 */
 function switchSea(on){
  P.sea=on;
- if(on){curScene=seaScene;P.x=EXIT_POS.x;P.y=170;sfx("splash");toast("🌊 潛入海底!左下搖桿游動,右下互動");}
+ if(on){toast("🌊 潛入中…(首次較慢)");
+  curScene=seaScene;P.x=EXIT_POS.x;P.y=170;sfx("splash");
+  setTimeout(()=>toast("🌊 潛入海底!左下搖桿游動,右下互動"),900);}
  else{curScene=beachScene;P.x=PIER.x;P.y=PIER.y-90;sfx("splash");}
  if(avatar)curScene.add(avatar);
  camera.position.set(W2T(P.x),6,Z2T(P.y)-10);}
@@ -2158,6 +2160,16 @@ beachScene=buildBeach();seaScene=buildSea();
 curScene=beachScene;switchSea(false);
 loop();
 window.__world3dOK=true;
+/* 預編譯海底著色器,避免手機潛入時定格 */
+setTimeout(function(){
+ try{
+  renderer.compile(seaScene,camera);
+  if(typeof visitScene!=="undefined"&&visitScene)renderer.compile(visitScene,camera);
+ }catch(e){}
+ try{
+  seaScene.traverse(o=>{if(o.material&&o.material.map)o.material.map.needsUpdate=true;});
+ }catch(e){}
+},1200);
 window.__dbg=function(){return {P:{x:Math.round(P.x),y:Math.round(P.y),sea:P.sea},
  cam:camera.position.toArray().map(v=>Math.round(v*10)/10),
  scene:curScene===beachScene?"beach":(curScene===seaScene?"sea":"visit"),visit:P.visiting||null,
