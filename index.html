@@ -746,6 +746,7 @@ function fanShellInterior(cv,S){
 }
 function startCrack(o){
  CK={oyster:o,points:[],hits:0,miss:0,hints:3,pearl:null,damaged:false};
+ window.__CK=CK;
  $("#crackModal").classList.add("on");
  const area=$("#shellArea");area.querySelectorAll(".hitMark,.hintRing,.ripple").forEach(e=>e.remove());
  // 畫扇貝:上蓋+下座
@@ -1655,8 +1656,7 @@ function buildSea(){
  sc.fog=new THREE.Fog(0x08394f,8,80);
  sc.add(new THREE.HemisphereLight(0x9fd8ff,0x0a2a3a,0.9));
  const sun=new THREE.DirectionalLight(0xbfe8ff,1.2);sun.position.set(0,60,0);sc.add(sun);
-sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
-const usc=sun.shadow.camera;usc.left=-90;usc.right=90;usc.top=90;usc.bottom=-90;usc.near=1;usc.far=220;sun.shadow.bias=-0.0005;
+sun.castShadow=false;
  const pl=new THREE.PointLight(0x8fd8ff,60,60);sc.add(pl);sc.userData.pl=pl;
  const bedG=new THREE.PlaneGeometry(300,220,30,22);
 const bp2=bedG.attributes.position;
@@ -1670,21 +1670,21 @@ const caustic=new THREE.Mesh(new THREE.PlaneGeometry(300,220),
 caustic.rotation.x=-Math.PI/2;caustic.position.y=0.32;sc.add(caustic);sc.userData.caustic=caustic;
  const surf=new THREE.Mesh(new THREE.PlaneGeometry(300,220),new THREE.MeshLambertMaterial({map:tex(IMG.uw,10,8),transparent:true,opacity:.45}));
  surf.rotation.x=Math.PI/2;surf.position.y=14;sc.add(surf);
- for(let k=0;k<6;k++){const ray=new THREE.Mesh(new THREE.PlaneGeometry(5,36),
+ for(let k=0;k<4;k++){const ray=new THREE.Mesh(new THREE.PlaneGeometry(5,36),
   new THREE.MeshBasicMaterial({map:tex(IMG.rays,1,1),transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
   ray.position.set(-60+k*24+Math.random()*8,10,-30+Math.random()*60);ray.rotation.z=0.12;sc.add(ray);}
  const bgeo=new THREE.BufferGeometry();const bp=[];
- for(let i=0;i<80;i++)bp.push((Math.random()-0.5)*220,Math.random()*16,(Math.random()-0.5)*160);
+ for(let i=0;i<36;i++)bp.push((Math.random()-0.5)*220,Math.random()*16,(Math.random()-0.5)*160);
  bgeo.setAttribute("position",new THREE.Float32BufferAttribute(bp,3));
  const bubs=new THREE.Points(bgeo,new THREE.PointsMaterial({color:0xcfeaff,size:0.45,transparent:true,opacity:.7}));
  sc.add(bubs);sc.userData.bubs=bubs;
  sc.userData.weeds=[];
- for(let k=0;k<14;k++){const h=4+Math.random()*4;
+ for(let k=0;k<8;k++){const h=4+Math.random()*4;
   const w=new THREE.Mesh(new THREE.ConeGeometry(0.5,h,6),new THREE.MeshLambertMaterial({color:0x1e7a4a,transparent:true,opacity:.9}));
   w.geometry.translate(0,h/2,0);w.position.set(-70+Math.random()*140,0,-50+Math.random()*100);
   sc.add(w);sc.userData.weeds.push(w);}
  for(let k=0;k<8;k++){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(1+Math.random()*2),new THREE.MeshLambertMaterial({color:0x5a6a72}));
-  r.position.set(-80+Math.random()*160,0.4,-60+Math.random()*120);r.castShadow=true;sc.add(r);}
+  r.position.set(-80+Math.random()*160,0.4,-60+Math.random()*120);sc.add(r);}
  const pts=[[FARM.x1,FARM.y1],[FARM.x2,FARM.y1],[FARM.x2,FARM.y2],[FARM.x1,FARM.y2],[FARM.x1,FARM.y1]]
   .map(([x,y])=>new THREE.Vector3(W2T(x),0.15,Z2T(y)));
  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
@@ -1985,6 +1985,7 @@ cvs.addEventListener("pointerup",ptrUp);cvs.addEventListener("pointercancel",ptr
 const remotePiers={};
 let visitScene=null;const visitOysterGrp=new THREE.Group();
 window.__pendingVisit=null;P.visiting=null;
+window.__teleport=function(x,y){P.x=x;P.y=y;};
 function buildRemotePier(name){
  const grp=new THREE.Group();
  const pier=new THREE.Mesh(new THREE.BoxGeometry(10,0.6,24),
@@ -2039,8 +2040,10 @@ window.exitVisit=function(){
  toast("👋 已離開對方的海域");};
 
 window.unstick=function(){
- if(P.sea){P.x=EXIT_POS.x;P.y=EXIT_POS.y+90;}
- else{P.x=1000;P.y=880;}
+ P.visiting=null;window.__pendingVisit=null;
+ P.sea=false;curScene=beachScene;
+ if(avatar)curScene.add(avatar);
+ P.x=1000;P.y=880;
  camYaw=0;camPitch=0.62;
  camera.position.set(W2T(P.x),6,Z2T(P.y)-10);
  toast("🏃 已傳送到安全位置!");
@@ -2112,7 +2115,9 @@ function loop(t){
     spk.scale.setScalar(Math.max(0.6,pe.scale.x)*1.2);spk.position.y=pe.position.y;}}
   else if(spk)spk.visible=false;}
  if(seaScene.userData.bubs){const bp=seaScene.userData.bubs.geometry.attributes.position;
-  for(let i=0;i<bp.count;i++){let y=bp.getY(i)+dt*(0.6+(i%5)*0.12);if(y>15)y=0;bp.setY(i,y);}
+  window.__bubHalf=!window.__bubHalf;
+  const st=window.__bubHalf?0:1;
+  for(let i=st;i<bp.count;i+=2){let y=bp.getY(i)+dt*2*(0.6+(i%5)*0.12);if(y>15)y=0;bp.setY(i,y);}
   bp.needsUpdate=true;}
  (seaScene.userData.weeds||[]).forEach((w,i)=>{w.rotation.z=Math.sin(Date.now()/900+i)*0.14;});
  if(seaScene.userData.caustic){const cm=seaScene.userData.caustic.material.map;
