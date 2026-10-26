@@ -1810,7 +1810,8 @@ const actBtn=$("#actBtn");
 let lastAct=0;
 function doAct(){const n=Date.now();if(n-lastAct<400)return;lastAct=n;
  if(CUR_ACT&&CUR_ACT.act){sfx("click");CUR_ACT.act();}}
-["pointerdown","click"].forEach(ev=>actBtn.addEventListener(ev,e=>{e.preventDefault();doAct();}));
+["pointerdown","click","touchstart"].forEach(ev=>actBtn.addEventListener(ev,e=>{e.preventDefault();doAct();},{passive:false}));
+actBtn.addEventListener("touchend",e=>{e.preventDefault();doAct();},{passive:false});
 function checkRotate(){const coarse=matchMedia("(pointer:coarse)").matches;
  $("#rotateTip").style.display=(coarse&&innerHeight>innerWidth)?"flex":"none";}
 addEventListener("resize",checkRotate);checkRotate();
@@ -1979,6 +1980,7 @@ cvs.addEventListener("pointermove",e=>{if(!PTRS.has(e.pointerId))return;
 const ptrUp=e=>{PTRS.delete(e.pointerId);
  if(PTRS.size<2)pinchD=0;
  if(PTRS.size===0&&moved<12&&Date.now()-tapT<350)doAct();};
+window.__tryAct=function(){doAct();};
 cvs.addEventListener("pointerup",ptrUp);cvs.addEventListener("pointercancel",ptrUp);
 
 /* 除錯狀態列已移除 */
