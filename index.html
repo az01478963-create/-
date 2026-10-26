@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>珍珠夢海灣 Pearl Dream Bay</title>
 <style>
 :root{
@@ -11,10 +11,10 @@
   --gold:#f5c542; --panel:#fffdf6; --ink:#3a2c1e;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;background:#06222e;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:var(--ink)}
+html,body{width:100%;height:100%;overflow:hidden;touch-action:none;background:#06222e;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:var(--ink)}
 button{font-family:inherit;cursor:pointer;border:none;outline:none}
 /* ===== 開始畫面 ===== */
-#startScreen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;
+#startScreen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:16px 0;
  background:radial-gradient(ellipse at 50% 120%, #1b8aa6 0%, #0b3d51 45%, #06222e 100%);transition:opacity .8s}
 #startScreen.hide{opacity:0;pointer-events:none}
 .logo{font-size:min(9vw,72px);font-weight:900;color:#fff;letter-spacing:.08em;text-shadow:0 4px 0 #0a4a5e,0 10px 30px rgba(0,0,0,.5);animation:float 3s ease-in-out infinite}
@@ -23,7 +23,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 .logoPearl{font-size:min(14vw,110px);animation:spinPearl 5s linear infinite;filter:drop-shadow(0 0 25px #fff)}
 @keyframes spinPearl{0%{transform:rotateY(0) scale(1)}50%{transform:rotateY(180deg) scale(1.15)}100%{transform:rotateY(360deg) scale(1)}}
 .tagline{color:#bfeaf5;margin:14px 0 26px;font-size:min(4vw,18px);letter-spacing:.3em}
-#howto{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:14px 22px;color:#e8f7fb;font-size:min(3.4vw,14px);line-height:1.9;max-width:560px;margin-bottom:26px;text-align:left}
+#howto{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:12px 20px;color:#e8f7fb;font-size:min(2.6vw,13px);line-height:1.75;width:min(880px,92vw);max-height:46vh;overflow-y:auto;margin-bottom:20px;text-align:left;column-count:2;column-gap:26px}
 #howto b{color:var(--gold)}
 #startBtn{font-size:min(5vw,24px);font-weight:800;padding:16px 54px;border-radius:60px;color:#5d3d22;
  background:linear-gradient(180deg,#ffe9a8,#f5c542 60%,#d9a520);box-shadow:0 6px 0 #8a6a10,0 14px 30px rgba(0,0,0,.4);transition:.15s}
@@ -76,7 +76,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 .sheetHead{display:flex;align-items:center;padding:14px 18px;border-bottom:2px dashed #d8c9a8}
 .sheetHead h3{font-size:20px;flex:1}
 .xBtn{background:#e74c3c;color:#fff;width:34px;height:34px;border-radius:50%;font-size:16px;font-weight:900}
-.sheetBody{padding:14px 18px;overflow-y:auto}
+.sheetBody{padding:14px 18px;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 /* 商店卡片 */
 .cardGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .oCard{border:2px solid #e0d3b3;border-radius:14px;padding:10px;text-align:center;background:linear-gradient(180deg,#fff,#fdf6e3);transition:.15s;position:relative}
@@ -141,7 +141,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 /* 聊天室 */
 #chatBox{position:fixed;left:12px;bottom:64px;width:258px;z-index:25;display:none;flex-direction:column;background:rgba(6,34,46,.9);border:1px solid rgba(255,255,255,.25);border-radius:14px;overflow:hidden;backdrop-filter:blur(4px);box-shadow:0 12px 30px rgba(0,0,0,.5)}
 #chatBox.on{display:flex}
-#chatLog{height:158px;overflow-y:auto;padding:8px 10px;font-size:12px;color:#e8f7fb;line-height:1.65;word-break:break-all}
+#chatLog{height:158px;overflow-y:auto;touch-action:pan-y;padding:8px 10px;font-size:12px;color:#e8f7fb;line-height:1.65;word-break:break-all}
 #chatLog b{color:#8fd8ea}
 #chatLog .sys{color:#f5c542;font-size:11px}
 #chatBar{display:flex;border-top:1px solid rgba(255,255,255,.2)}
@@ -154,7 +154,9 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 #actBtn{position:fixed;right:24px;bottom:28px;width:94px;height:94px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a8,#f5c542 60%,#c8931a);color:#5d3d10;font-weight:900;font-size:13px;z-index:40;box-shadow:0 5px 0 #8a6a10,0 12px 24px rgba(0,0,0,.45);border:3px solid rgba(255,255,255,.55);touch-action:none;line-height:1.25;padding:8px;font-family:inherit}
 #actBtn.off{filter:grayscale(.75);opacity:.5;box-shadow:none}
 #menuBtn{position:fixed;right:42px;bottom:142px;width:56px;height:56px;border-radius:50%;background:rgba(6,34,46,.88);color:#fff;font-size:24px;z-index:40;border:2px solid rgba(255,255,255,.4);box-shadow:0 6px 16px rgba(0,0,0,.35)}
-#menuPanel{position:fixed;right:26px;bottom:212px;z-index:41;display:none;grid-template-columns:1fr 1fr;gap:8px;background:rgba(6,34,46,.95);border-radius:16px;padding:12px;border:1px solid rgba(255,255,255,.28);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+#menuPanel{touch-action:pan-y;position:fixed;top:56px;right:10px;bottom:auto;z-index:41;display:none;grid-template-columns:1fr 1fr;gap:8px;background:rgba(6,34,46,.95);border-radius:16px;padding:12px;border:1px solid rgba(255,255,255,.28);box-shadow:0 16px 40px rgba(0,0,0,.5);max-height:calc(100vh - 120px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+#menuPanel #multiPanel{position:static;width:216px;grid-column:1/-1;margin:4px 0 0;display:block!important;background:rgba(0,0,0,.28);border-radius:10px;padding:6px 8px}
+#menuPanel #feed{height:78px}
 #menuPanel.on{display:grid}
 #menuPanel button{background:rgba(27,138,166,.55);color:#fff;border-radius:10px;padding:11px 13px;font-size:13px;font-weight:700;white-space:nowrap;font-family:inherit}
 #menuPanel button:active{background:#1b8aa6}
@@ -171,7 +173,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
  #multiPanel h4{font-size:11px;margin-bottom:4px}
  #feed{height:84px}
  .stall{width:96px}
- #menuPanel{right:10px;bottom:150px;max-height:calc(100vh - 150px);overflow-y:auto;padding:8px;gap:6px}
+ #menuPanel{padding:8px;gap:6px}
  #menuPanel button{padding:9px 10px;font-size:12px}
  #joyBase{left:14px;bottom:14px;width:110px;height:110px}
  #joyKnob{left:32px;top:32px}
@@ -211,16 +213,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
     <div id="caseName">尚未展示</div>
     <div id="caseValue"></div>
   </div>
-  <div id="multiPanel">
-    <h4>🏝️ 島嶼財富榜</h4>
-    <div id="netUI">
-      <button class="dockBtn" id="createRoomBtn" style="width:100%;margin-bottom:6px">🔗 創建多人房間</button>
-      <button class="dockBtn" id="joinRoomBtn" style="width:100%">🔑 加入房間</button>
-      <div id="netStatus" style="text-align:center;font-size:11px;color:#8fd8ea;margin-top:4px">離線單機模式</div>
-    </div>
-    <div id="leaderList" style="margin-top:6px"></div>
-    <div id="feed"></div>
-  </div>
+  
   <div id="joyBase"><div id="joyKnob"></div></div>
   <button id="actBtn" class="off">互動</button>
   <button id="menuBtn">☰</button>
@@ -234,6 +227,16 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
     <button id="mHelp">❓ 玩法</button>
     <button id="mSave">💾 儲存</button>
     <button id="mReset" style="grid-column:1/3;background:rgba(200,60,40,.6)">🔄 重新開始</button>
+<div id="multiPanel">
+    <h4>🏝️ 島嶼財富榜</h4>
+    <div id="netUI">
+      <button class="dockBtn" id="createRoomBtn" style="width:100%;margin-bottom:6px">🔗 創建多人房間</button>
+      <button class="dockBtn" id="joinRoomBtn" style="width:100%">🔑 加入房間</button>
+      <div id="netStatus" style="text-align:center;font-size:11px;color:#8fd8ea;margin-top:4px">離線單機模式</div>
+    </div>
+    <div id="leaderList" style="margin-top:6px"></div>
+    <div id="feed"></div>
+  </div>
   </div>
   <div id="rotateTip">📱<br>請將手機<b>橫躺</b>遊玩<br><span style="font-size:13px;color:#8fd8ea">珍珠夢海灣為橫屏設計</span></div>
   <div id="chatBox"><div id="chatLog"></div><div id="chatBar"><input id="chatInput" maxlength="60" placeholder="輸入訊息,Enter 送出..."><button id="chatSend">➤</button></div></div>
@@ -264,6 +267,14 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 
 <script>
 "use strict";
+/* 防止瀏覽器頁面縮放(雙指/點太快),不影響遊戲內相機縮放 */
+document.addEventListener("gesturestart",e=>e.preventDefault());
+document.addEventListener("gesturechange",e=>e.preventDefault());
+document.addEventListener("gestureend",e=>e.preventDefault());
+document.addEventListener("dblclick",e=>e.preventDefault());
+document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+document.addEventListener("touchend",e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+
 /* ================= 資料定義 ================= */
 const RARITIES=[
  {name:"泥沙蚌",icon:"🦪",price:50,stars:1,base:60, colors:["#cfd4d8","#e8e8e8"],desc:"最常見的蚌，偶爾也有驚喜"},
@@ -1469,13 +1480,7 @@ const ptrUp=e=>{PTRS.delete(e.pointerId);
  if(PTRS.size===0&&moved<12&&Date.now()-tapT<350)doAct();};
 cvs.addEventListener("pointerup",ptrUp);cvs.addEventListener("pointercancel",ptrUp);
 
-/* 除錯狀態列 */
-const dbgEl=document.createElement("div");
-Object.assign(dbgEl.style,{position:"fixed",top:"52px",left:"50%",transform:"translateX(-50%)",
- background:"rgba(0,0,0,.55)",color:"#8fd8ea",fontSize:"11px",padding:"3px 12px",
- borderRadius:"12px",zIndex:"35",pointerEvents:"none",fontFamily:"monospace"});
-document.body.appendChild(dbgEl);
-window.__setDbg=t=>{dbgEl.textContent=t;};
+/* 除錯狀態列已移除 */
 
 /* 主迴圈 */
 const clockV=new THREE.Clock();
@@ -1489,7 +1494,7 @@ function loop(){
  P.moving=jl>0.18;
  let mvx=0,mvz=0;
  if(P.moving){
-  const spd=(P.sea?5.5:7)*Math.min(1,jl);
+  const spd=(P.sea?11:14)*Math.min(1,jl);
   const fx=Math.sin(camYaw),fz=Math.cos(camYaw);   // 鏡頭前方
   mvx=(fx*(-jy)-fz*jx)*spd*dt*10;   // 右向量=(-fz,fx),修正左右顛倒
   mvz=(fz*(-jy)+fx*jx)*spd*dt*10;
