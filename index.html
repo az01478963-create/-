@@ -1708,27 +1708,27 @@ function faceTexture(isGirl){
  const g=c.createRadialGradient(100,90,20,128,128,150);
  g.addColorStop(0,"#ffe3c2");g.addColorStop(1,"#f5c193");
  c.fillStyle=g;c.fillRect(0,0,256,256);
- const ex=62;
+ const ex=42;
  for(const sx of [128-ex,128+ex]){
-  c.fillStyle="#fff";c.beginPath();c.ellipse(sx,128,24,28,0,0,7);c.fill();
-  c.fillStyle="#5a3a20";c.beginPath();c.arc(sx,130,16,0,7);c.fill();
-  c.fillStyle="#1c0f06";c.beginPath();c.arc(sx,130,7.5,0,7);c.fill();
-  c.fillStyle="#fff";c.beginPath();c.arc(sx-5,124,4.6,0,7);c.fill();
+  c.fillStyle="#fff";c.beginPath();c.ellipse(sx,128,19,23,0,0,7);c.fill();
+  c.fillStyle="#5a3a20";c.beginPath();c.arc(sx,130,13,0,7);c.fill();
+  c.fillStyle="#1c0f06";c.beginPath();c.arc(sx,130,6,0,7);c.fill();
+  c.fillStyle="#fff";c.beginPath();c.arc(sx-4,125,3.8,0,7);c.fill();
   c.strokeStyle="#241a12";c.lineWidth=4.5;c.lineCap="round";
   const ln=isGirl?3:2;
   for(let k=-2;k<=2;k++){if(Math.abs(k)>ln)continue;
    c.beginPath();c.moveTo(sx+k*9,102);
    c.quadraticCurveTo(sx+k*12,93,sx+k*9,84-Math.abs(k)*2);
    c.stroke();}
-  c.strokeStyle="#4a3520";c.lineWidth=5.5;
-  c.beginPath();c.moveTo(sx-22,84);c.quadraticCurveTo(sx,75,sx+22,84);c.stroke();}
+  c.strokeStyle="#4a3520";c.lineWidth=5;
+  c.beginPath();c.moveTo(sx-17,86);c.quadraticCurveTo(sx,78,sx+17,86);c.stroke();}
  c.fillStyle="rgba(255,130,150,.35)";
- c.beginPath();c.ellipse(128-ex-26,158,13,7,0,0,7);c.fill();
- c.beginPath();c.ellipse(128+ex+26,158,13,7,0,0,7);c.fill();
+ c.beginPath();c.ellipse(128-ex-20,156,11,6,0,0,7);c.fill();
+ c.beginPath();c.ellipse(128+ex+20,156,11,6,0,0,7);c.fill();
  c.fillStyle="rgba(216,154,106,.5)";
- c.beginPath();c.ellipse(128,150,4.5,3,0,0,7);c.fill();
+ c.beginPath();c.ellipse(128,150,4,2.6,0,0,7);c.fill();
  c.strokeStyle="#d06070";c.lineWidth=4.5;c.lineCap="round";
- c.beginPath();c.moveTo(114,176);c.quadraticCurveTo(128,183,142,176);c.stroke();
+ c.beginPath();c.moveTo(117,174);c.quadraticCurveTo(128,180,139,174);c.stroke();
  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;return t;}
 function buildHumanoid(gender){
  const girl=gender==="girl";
