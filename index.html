@@ -2163,6 +2163,57 @@ window.unstick=function(){
  toast("🏃 已傳送到安全位置!");
  sfx("splash");};
 
+/* 手機 2D 海底 fallback */
+const lowSeaCv=document.createElement("canvas");
+lowSeaCv.id="lowSeaCv";
+Object.assign(lowSeaCv.style,{position:"absolute",inset:"0",zIndex:"1",display:"none"});
+$("#game").insertBefore(lowSeaCv,$("#game").firstChild);
+const lowOysterImg={};const lowImgCache={};
+function lowImg(key){
+ if(!lowImgCache[key]){const im=new Image();im.src=IMG[key];lowImgCache[key]=im;}
+ return lowImgCache[key];}
+function lowSea2D(t){
+ const c=lowSeaCv.getContext("2d"),W=lowSeaCv.width=innerWidth,H=lowSeaCv.height=innerHeight;
+ const camx=Math.max(0,Math.min(1500-W,P.x-W/2)),camy=Math.max(0,Math.min(950-H,P.y-H/2));
+ c.save();c.translate(-camx,-camy);
+ const g=c.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,"#2b93b3");g.addColorStop(1,"#08394f");
+ c.fillStyle=g;c.fillRect(camx,camy,W,H);
+ // 光束
+ const rays=lowImg("rays");
+ if(rays.complete){c.globalAlpha=.35;for(let k=0;k<4;k++){
+  c.drawImage(rays,camx+((k*380+t/40)%Math.max(1,W+300))-150,camy,220,H);}c.globalAlpha=1;}
+ // 海底
+ const sb=lowImg("seabed");
+ if(sb.complete){c.drawImage(sb,camx-50,760,900,240);c.drawImage(sb,camx+850,760,900,240);}
+ // 氣泡
+ for(let k=0;k<20;k++){const bx=camx+((k*173)%W),by=940-((t/18+k*97)%Math.max(1,H+60));
+  c.strokeStyle="rgba(220,245,255,.5)";c.lineWidth=1.4;
+  c.beginPath();c.arc(bx,by,2+(k%3),0,7);c.stroke();}
+ // 蚌田
+ c.strokeStyle="rgba(245,197,66,.8)";c.lineWidth=3;c.setLineDash([14,10]);
+ c.strokeRect(FARM.x1,FARM.y1,FARM.x2-FARM.x1,FARM.y2-FARM.y1);c.setLineDash([]);
+ c.fillStyle="rgba(255,240,190,.9)";c.font="bold 15px sans-serif";c.textAlign="left";
+ c.fillText("🏝️ 你的蚌田",FARM.x1+16,FARM.y1+30);
+ // 蚌
+ if(S)S.oysters.forEach(o=>{
+  const uri=oysterArtURL(o.rarity);
+  if(!lowOysterImg[uri]){const im=new Image();im.src=uri;lowOysterImg[uri]=im;}
+  const im=lowOysterImg[uri];
+  const bob=Math.sin(t/500+o.id)*2;
+  if(o.ready){c.fillStyle="rgba(255,255,180,"+(0.25+0.18*Math.sin(t/300+o.id))+")";
+   c.beginPath();c.arc(o.x,o.y,34,0,7);c.fill();}
+  if(im.complete)c.drawImage(im,o.x-34,o.y-60+bob,68,68);});
+ // 浮球
+ c.font="40px serif";c.textAlign="center";
+ c.fillText("🛟",EXIT_POS.x,EXIT_POS.y+16);
+ c.font="bold 14px sans-serif";c.fillStyle="#bfeaf5";
+ c.fillText("浮球 · 互動浮出",EXIT_POS.x,EXIT_POS.y+48);
+ // 自己
+ c.font="34px serif";c.fillText("🤿",P.x,P.y+10+Math.sin(t/350)*3);
+ c.restore();
+}
+
 /* 地形高度(人物貼地) */
 function groundY(wx,wz){
  const ly=-wz;
@@ -2222,13 +2273,21 @@ function loop(t){
   const pe=beachScene.userData.case.userData.pearl;
   const spk=beachScene.userData.case.userData.sparks;
   pe.visible=!!dp;
-  if(dp){pe.material.color.set(dp.color);pe.material.emissive=new THREE.Color(dp.color2||dp.color).multiplyScalar(0.15);
-   pe.scale.setScalar(0.45+dp.size/15*1.1);
+  if(dp){
+   if(pe.userData.pid!==dp.id){
+    pe.userData.pid=dp.id;
+    const pt=new THREE.CanvasTexture(pearlCanvas(dp));
+    pt.colorSpace=THREE.SRGBColorSpace;
+    pe.material.map=pt;pe.material.color.set("#ffffff");
+    pe.material.needsUpdate=true;}
+   pe.material.emissive=new THREE.Color(dp.color2||dp.color).multiplyScalar(0.18);
+   pe.scale.set(0.45+dp.size/15*1.1,0.45+dp.size/15*1.1*(dp.shape>=65?1:0.75+0.24*dp.shape/100),0.45+dp.size/15*1.1);
    pe.rotation.y+=dt*1.2;pe.position.y=3.6+Math.sin(Date.now()/400)*0.15;
    if(spk){spk.visible=["S","SS","SSS"].includes(dp.grade);
     spk.rotation.y+=dt*1.6;spk.rotation.x+=dt*0.9;
     spk.scale.setScalar(Math.max(0.6,pe.scale.x)*1.2);spk.position.y=pe.position.y;}}
-  else if(spk)spk.visible=false;}
+  else{pe.userData.pid=null;pe.material.map=null;pe.material.needsUpdate=true;
+   if(spk)spk.visible=false;}}
  if(seaScene.userData.bubs){const bp=seaScene.userData.bubs.geometry.attributes.position;
   window.__bubHalf=!window.__bubHalf;
   const st=window.__bubHalf?0:1;
@@ -2262,6 +2321,10 @@ function loop(t){
  CUR_ACT=window.findInteract();
  actBtn.textContent=CUR_ACT?CUR_ACT.label:"···";
  actBtn.classList.toggle("off",!(CUR_ACT&&CUR_ACT.act));
+ if(window.__lowMode){
+  lowSeaCv.style.display=P.sea?"block":"none";
+  if(P.sea){lowSea2D(t||0);return;}
+ }
  const lab=CUR_ACT?CUR_ACT.label:"";
  if(lab!==lastHint&&hintSpr){lastHint=lab;updateTextSprite(hintSpr,lab||"···","#ffe9a8");}
  if(window.__setDbg){const hasS=typeof S!=="undefined"&&S;
@@ -2283,7 +2346,15 @@ setTimeout(function(){
   seaScene.traverse(o=>{if(o.material&&o.material.map)o.material.map.needsUpdate=true;});
  }catch(e){}
 },1200);
-window.__dbg=function(){return {P:{x:Math.round(P.x),y:Math.round(P.y),sea:P.sea},
+window.__dbg=function(){
+ let caseInfo=null;
+ try{const cs=beachScene.userData.case;
+  if(cs){caseInfo={visible:cs.userData.pearl.visible,
+   color:"#"+cs.userData.pearl.material.color.getHexString(),
+   emis:"#"+cs.userData.pearl.material.emissive.getHexString(),
+   scale:Math.round(cs.userData.pearl.scale.x*100)/100,
+   sparks:cs.userData.sparks?cs.userData.sparks.visible:null};}}catch(e){caseInfo=String(e);}
+ return {P:{x:Math.round(P.x),y:Math.round(P.y),sea:P.sea},case:caseInfo,
  cam:camera.position.toArray().map(v=>Math.round(v*10)/10),
  scene:curScene===beachScene?"beach":(curScene===seaScene?"sea":"visit"),visit:P.visiting||null,
  avatar:avatar?avatar.position.toArray().map(v=>Math.round(v*10)/10):null,
